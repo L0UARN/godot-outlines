@@ -87,7 +87,7 @@ namespace GodotOutlines
 
 		private void InitOutlineShader()
 		{
-			OutlineShader = new(RenderingDevice, "res://resources/bruteforce_outlines_new.glsl");
+			OutlineShader = new(RenderingDevice, "res://shaders/outlines_shader.glsl");
 
 			OutlineInputTextureUniform = new(RenderingDevice, OutlineShader.ShaderRid, 0, OutlineInputTexture);
 			OutlineShader.BindUniform(OutlineInputTextureUniform);
@@ -101,7 +101,7 @@ namespace GodotOutlines
 
 		private void InitBlurShader()
 		{
-			BlurShader = new(RenderingDevice, "res://resources/bruteforce_blur_new.glsl");
+			BlurShader = new(RenderingDevice, "res://shaders/blur_shader.glsl");
 
 			Blur1InputTextureUniform = new(RenderingDevice, BlurShader.ShaderRid, 0, OutlineOutputTexture);
 			Blur1OutputTextureUniform = new(RenderingDevice, BlurShader.ShaderRid, 1, Blur1OutputTexture);
