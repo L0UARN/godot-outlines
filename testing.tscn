@@ -1,0 +1,137 @@
+[gd_scene load_steps=15 format=3 uid="uid://b2bgu3j7lj8xq"]
+
+[ext_resource type="Script" path="res://scripts/Outliner.cs" id="1_sd7y2"]
+[ext_resource type="Script" path="res://scripts/OutlinerInput.cs" id="2_dblf6"]
+[ext_resource type="PackedScene" uid="uid://b871t80pls5us" path="res://outline_display.tscn" id="3_lohct"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7d8ek"]
+albedo_color = Color(1, 0, 0, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_03cqh"]
+material = SubResource("StandardMaterial3D_7d8ek")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lmb1s"]
+albedo_color = Color(0, 0.352941, 1, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_k34qs"]
+material = SubResource("StandardMaterial3D_lmb1s")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pdmsy"]
+albedo_color = Color(0.415686, 1, 0, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ktjv2"]
+material = SubResource("StandardMaterial3D_pdmsy")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8173c"]
+albedo_color = Color(1, 0.878431, 0, 1)
+
+[sub_resource type="PrismMesh" id="PrismMesh_xo604"]
+material = SubResource("StandardMaterial3D_8173c")
+
+[sub_resource type="Animation" id="Animation_y6ghe"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Camera3D:fov")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [75.0]
+}
+
+[sub_resource type="Animation" id="Animation_irl3e"]
+resource_name = "rotating_camera"
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 1),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(0, 6.28319, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Camera3D:fov")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.5, 0.7, 1),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [75.0, 60.0, 40.0, 75.0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_jyfow"]
+_data = {
+"RESET": SubResource("Animation_y6ghe"),
+"rotating_camera": SubResource("Animation_irl3e")
+}
+
+[node name="Testing" type="Node3D"]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 0, 0)
+shadow_enabled = true
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_03cqh")
+
+[node name="MeshInstance3D3" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.749776, 0, 0.661691, 0, 1, 0, -0.661691, 0, 0.749776, -0.379181, 0.972552, 0.965422)
+mesh = SubResource("SphereMesh_k34qs")
+
+[node name="Node3D" type="Node3D" parent="."]
+
+[node name="Outliner" type="Node" parent="Node3D" node_paths=PackedStringArray("MeshesParent")]
+script = ExtResource("1_sd7y2")
+MeshesParent = NodePath("..")
+
+[node name="OutlinerInput" type="Node" parent="Node3D" node_paths=PackedStringArray("Outliner")]
+script = ExtResource("2_dblf6")
+Outliner = NodePath("../Outliner")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Node3D"]
+transform = Transform3D(0.816984, 0, 0.576661, 0, 1, 0, -0.576661, 0, 0.816984, 0.842525, 0.6361, 0)
+mesh = SubResource("BoxMesh_ktjv2")
+skeleton = NodePath("../..")
+
+[node name="MeshInstance3D4" type="MeshInstance3D" parent="Node3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.39213, 0, 0)
+mesh = SubResource("PrismMesh_xo604")
+skeleton = NodePath("../..")
+
+[node name="Pivot" type="Node3D" parent="."]
+
+[node name="Camera3D" type="Camera3D" parent="Pivot"]
+transform = Transform3D(1, 0, 0, 0, 0.819152, 0.573576, 0, -0.573576, 0.819152, 0, 3, 4)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Pivot"]
+libraries = {
+"": SubResource("AnimationLibrary_jyfow")
+}
+autoplay = "rotating_camera"
+speed_scale = 0.1
+
+[node name="OutlineDisplay" parent="." instance=ExtResource("3_lohct")]
