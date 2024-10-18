@@ -6,10 +6,12 @@ namespace PostProcessingComputeShaders
 	{
 		protected RenderingDevice _Rd = null;
 
-		protected Rid _Rid = new();
+		protected string _ShaderPath = null;
+		protected Rid _PipelineRid = new();
+
 		public Rid Rid
 		{
-			get => this._Rid;
+			get => PpcsShaderPool.GetShaderRid(this._Rd, this._ShaderPath);
 		}
 
 		protected PpcsUniformImage _InputImageUniform = null;
@@ -62,21 +64,32 @@ namespace PostProcessingComputeShaders
 			}
 		}
 
-		public PpcsShader(RenderingDevice renderingDevice)
+		// TODO: add generic uniforms
+
+		public PpcsShader(RenderingDevice renderingDevice, string shaderPath)
 		{
 			this._Rd = renderingDevice;
+			this._ShaderPath = shaderPath;
+
+			Rid shaderRid = PpcsShaderPool.GetShaderRid(this._Rd, this._ShaderPath);
+			PpcsShaderPool.AddShaderReference(this._ShaderPath);
+			this._PipelineRid = this._Rd.ComputePipelineCreate(shaderRid);
 		}
 
 		public void Cleanup()
 		{
-			if (!this._Rid.IsValid)
+			if (!this.Rid.IsValid)
 			{
 				return;
 			}
 
 			this._InputImageUniform.Cleanup();
 			this._OutputImageUniform.Cleanup();
-			this._Rd.FreeRid(this._Rid);
+
+			// TODO: cleanup generic uniforms
+
+			this._Rd.FreeRid(this._PipelineRid);
+			PpcsShaderPool.CleanupShader(this._Rd, this._ShaderPath);
 		}
 	}
 }

@@ -60,6 +60,12 @@ namespace PostProcessingComputeShaders
 			this.Rid = rid;
 		}
 
+		public void CopyTo(PpcsImage otherImage)
+		{
+			Vector3 sizeToCopy = new(Mathf.Min(this._Size.X, otherImage.Size.X), Mathf.Min(this._Size.Y, this._Size.Y), 1);
+			_Rd.TextureCopy(this._Rid, otherImage.Rid, Vector3.Zero, Vector3.Zero, sizeToCopy, 0, 0, 0, 0);
+		}
+
 		public void Cleanup()
 		{
 			if (!_Rid.IsValid)
