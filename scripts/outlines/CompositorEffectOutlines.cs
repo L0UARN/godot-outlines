@@ -1,5 +1,5 @@
 using Godot;
-using Ppcs;
+using Outlines.Ppcs;
 
 namespace Outlines
 {
@@ -16,7 +16,7 @@ namespace Outlines
 			{
 				return;
 			}
-			
+
 			PpcsShader colorInversionShader = new(this._Rd, "res://shaders/test.glsl");
 			PpcsShader darkeningShader = new(this._Rd, "res://shaders/test2.glsl");
 			PpcsShader redeningShader = new(this._Rd, "res://shaders/test3.glsl");

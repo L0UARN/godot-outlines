@@ -1,7 +1,7 @@
 using Godot;
 using Godot.Collections;
 
-namespace Ppcs
+namespace Outlines.Ppcs
 {
 	public class PpcsUniformImage : PpcsUniform
 	{

@@ -1,6 +1,6 @@
 using Godot;
 
-namespace Ppcs
+namespace Outlines.Ppcs
 {
 	public class PpcsUniform
 	{
