@@ -1,7 +1,5 @@
-[gd_scene load_steps=17 format=3 uid="uid://b2bgu3j7lj8xq"]
+[gd_scene load_steps=15 format=3 uid="uid://b2bgu3j7lj8xq"]
 
-[ext_resource type="Script" path="res://scripts/Outliner.cs" id="1_sd7y2"]
-[ext_resource type="Script" path="res://scripts/OutlinerInput.cs" id="2_dblf6"]
 [ext_resource type="Script" path="res://scripts/outlines/CompositorEffectOutlines.cs" id="3_54518"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7d8ek"]
@@ -115,14 +113,6 @@ transform = Transform3D(0.749776, 0, 0.661691, 0, 1, 0, -0.661691, 0, 0.749776, 
 mesh = SubResource("SphereMesh_k34qs")
 
 [node name="Node3D" type="Node3D" parent="."]
-
-[node name="Outliner" type="Node" parent="Node3D" node_paths=PackedStringArray("MeshesParent")]
-script = ExtResource("1_sd7y2")
-MeshesParent = NodePath("..")
-
-[node name="OutlinerInput" type="Node" parent="Node3D" node_paths=PackedStringArray("Outliner")]
-script = ExtResource("2_dblf6")
-Outliner = NodePath("../Outliner")
 
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="Node3D"]
 transform = Transform3D(0.816984, 0, 0.576661, 0, 1, 0, -0.576661, 0, 0.816984, 0.842525, 0.6361, 0)
