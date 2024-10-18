@@ -1,7 +1,7 @@
 using Godot;
 using Godot.Collections;
 
-namespace GodotOutlines
+namespace Ppcs
 {
 	public class CsUniformBuffer : CsUniform
 	{

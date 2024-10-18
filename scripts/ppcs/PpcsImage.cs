@@ -1,6 +1,6 @@
 using Godot;
 
-namespace PostProcessingComputeShaders
+namespace Ppcs
 {
 	public class PpcsImage
 	{
@@ -16,6 +16,8 @@ namespace PostProcessingComputeShaders
 				{
 					return;
 				}
+
+				Cleanup();
 
 				RDTextureFormat textureFormat = new()
 				{
@@ -41,6 +43,8 @@ namespace PostProcessingComputeShaders
 				{
 					return;
 				}
+
+				Cleanup();
 
 				RDTextureFormat format = this._Rd.TextureGetFormat(value);
 				this._Size = new((int)format.Width, (int)format.Height);

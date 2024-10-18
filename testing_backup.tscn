@@ -1,8 +1,8 @@
-[gd_scene load_steps=17 format=3 uid="uid://b2bgu3j7lj8xq"]
+[gd_scene load_steps=15 format=3 uid="uid://ba42lqq1csu8h"]
 
-[ext_resource type="Script" path="res://scripts/Outliner.cs" id="1_sd7y2"]
-[ext_resource type="Script" path="res://scripts/OutlinerInput.cs" id="2_dblf6"]
-[ext_resource type="Script" path="res://scripts/outlines/CompositorEffectOutlines.cs" id="3_54518"]
+[ext_resource type="Script" path="res://scripts/Outliner.cs" id="1_shdml"]
+[ext_resource type="Script" path="res://scripts/OutlinerInput.cs" id="2_arwb0"]
+[ext_resource type="PackedScene" uid="uid://b871t80pls5us" path="res://outline_display.tscn" id="3_nh6kj"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7d8ek"]
 albedo_color = Color(1, 0, 0, 1)
@@ -27,18 +27,6 @@ albedo_color = Color(1, 0.878431, 0, 1)
 
 [sub_resource type="PrismMesh" id="PrismMesh_xo604"]
 material = SubResource("StandardMaterial3D_8173c")
-
-[sub_resource type="CompositorEffect" id="CompositorEffect_vv431"]
-resource_local_to_scene = false
-resource_name = ""
-enabled = true
-effect_callback_type = 4
-needs_motion_vectors = false
-needs_normal_roughness = false
-script = ExtResource("3_54518")
-
-[sub_resource type="Compositor" id="Compositor_2s0io"]
-compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_vv431")])
 
 [sub_resource type="Animation" id="Animation_y6ghe"]
 length = 0.001
@@ -117,11 +105,11 @@ mesh = SubResource("SphereMesh_k34qs")
 [node name="Node3D" type="Node3D" parent="."]
 
 [node name="Outliner" type="Node" parent="Node3D" node_paths=PackedStringArray("MeshesParent")]
-script = ExtResource("1_sd7y2")
+script = ExtResource("1_shdml")
 MeshesParent = NodePath("..")
 
 [node name="OutlinerInput" type="Node" parent="Node3D" node_paths=PackedStringArray("Outliner")]
-script = ExtResource("2_dblf6")
+script = ExtResource("2_arwb0")
 Outliner = NodePath("../Outliner")
 
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="Node3D"]
@@ -138,7 +126,6 @@ skeleton = NodePath("../..")
 
 [node name="Camera3D" type="Camera3D" parent="Pivot"]
 transform = Transform3D(1, 0, 0, 0, 0.819152, 0.573576, 0, -0.573576, 0.819152, 0, 3, 4)
-compositor = SubResource("Compositor_2s0io")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="Pivot"]
 libraries = {
@@ -146,3 +133,5 @@ libraries = {
 }
 autoplay = "rotating_camera"
 speed_scale = 0.1
+
+[node name="OutlineDisplay" parent="." instance=ExtResource("3_nh6kj")]

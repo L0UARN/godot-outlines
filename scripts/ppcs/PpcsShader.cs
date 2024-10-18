@@ -1,6 +1,7 @@
+using System.Collections.Generic;
 using Godot;
 
-namespace PostProcessingComputeShaders
+namespace Ppcs
 {
 	public class PpcsShader
 	{
@@ -21,14 +22,14 @@ namespace PostProcessingComputeShaders
 			get => this._InputImage;
 			set
 			{
-				if (value.Rid == this._InputImage.Rid)
+				if (this._InputImage != null && value.Rid == this._InputImage.Rid)
 				{
 					return;
 				}
 
 				if (this._InputImageUniform == null)
 				{
-					this._InputImageUniform = new(this._Rd, this, 0, value);
+					this._InputImageUniform = new(this._Rd, this, 0, value, false);
 				}
 				else
 				{
@@ -46,14 +47,14 @@ namespace PostProcessingComputeShaders
 			get => _OutputImage;
 			set
 			{
-				if (value.Rid == this._OutputImage.Rid)
+				if (this._OutputImage != null && value.Rid == this._OutputImage.Rid)
 				{
 					return;
 				}
 
 				if (this._OutputImageUniform == null)
 				{
-					this._OutputImageUniform = new(this._Rd, this, 0, value);
+					this._OutputImageUniform = new(this._Rd, this, 0, value, false);
 				}
 				else
 				{
@@ -64,7 +65,12 @@ namespace PostProcessingComputeShaders
 			}
 		}
 
-		// TODO: add generic uniforms
+		protected List<PpcsUniform> _Uniforms = new();
+
+		public void BindUniform(PpcsUniform uniform)
+		{
+			this._Uniforms.Add(uniform);
+		}
 
 		public PpcsShader(RenderingDevice renderingDevice, string shaderPath)
 		{
@@ -76,17 +82,50 @@ namespace PostProcessingComputeShaders
 			this._PipelineRid = this._Rd.ComputePipelineCreate(shaderRid);
 		}
 
-		public void Cleanup()
+		public void Run()
+		{
+			if (this._InputImage == null || this._OutputImage == null)
+			{
+				return;
+			}
+
+			long computeList = this._Rd.ComputeListBegin();
+			this._Rd.ComputeListBindComputePipeline(computeList, this._PipelineRid);
+
+			this._Rd.ComputeListBindUniformSet(computeList, this._InputImageUniform.Rid, 0);
+			this._Rd.ComputeListBindUniformSet(computeList, this._OutputImageUniform.Rid, 1);
+
+			foreach (PpcsUniform uniform in this._Uniforms)
+			{
+				this._Rd.ComputeListBindUniformSet(computeList, uniform.Rid, (uint)uniform.Set);
+			}
+
+			Vector2I size = new(
+				Mathf.FloorToInt(Mathf.Min(this._InputImage.Size.X, this._OutputImage.Size.X) / 8),
+				Mathf.FloorToInt(Mathf.Min(this._InputImage.Size.Y, this._OutputImage.Size.Y) / 8)
+			);
+
+			this._Rd.ComputeListDispatch(computeList, (uint)size.X, (uint)size.Y, 1);
+			this._Rd.ComputeListEnd();
+		}
+
+		public void Cleanup(bool cleanupUniforms = true)
 		{
 			if (!this.Rid.IsValid)
 			{
 				return;
 			}
 
-			this._InputImageUniform.Cleanup();
-			this._OutputImageUniform.Cleanup();
+			this._InputImageUniform?.Cleanup();
+			this._OutputImageUniform?.Cleanup();
 
-			// TODO: cleanup generic uniforms
+			if (cleanupUniforms)
+			{
+				foreach (PpcsUniform uniform in this._Uniforms)
+				{
+					uniform.Cleanup();
+				}
+			}
 
 			this._Rd.FreeRid(this._PipelineRid);
 			PpcsShaderPool.CleanupShader(this._Rd, this._ShaderPath);

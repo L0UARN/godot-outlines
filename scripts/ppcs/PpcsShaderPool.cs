@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Godot;
 
-namespace PostProcessingComputeShaders
+namespace Ppcs
 {
 	public static class PpcsShaderPool
 	{

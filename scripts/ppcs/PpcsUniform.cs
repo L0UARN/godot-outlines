@@ -1,6 +1,6 @@
 using Godot;
 
-namespace PostProcessingComputeShaders
+namespace Ppcs
 {
 	public class PpcsUniform
 	{
@@ -19,11 +19,16 @@ namespace PostProcessingComputeShaders
 			get => this._Rid;
 		}
 
-		public PpcsUniform(RenderingDevice renderingDevice, PpcsShader shader, int set)
+		public PpcsUniform(RenderingDevice renderingDevice, PpcsShader shader, int set, bool bindToShader = true)
 		{
 			this._Rd = renderingDevice;
 			this._Shader = shader;
 			this._Set = set;
+
+			if (bindToShader)
+			{
+				this._Shader.BindUniform(this);
+			}
 		}
 
 		public void Cleanup()

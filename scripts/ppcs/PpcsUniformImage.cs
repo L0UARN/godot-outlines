@@ -1,7 +1,7 @@
 using Godot;
 using Godot.Collections;
 
-namespace PostProcessingComputeShaders
+namespace Ppcs
 {
 	public class PpcsUniformImage : PpcsUniform
 	{
@@ -30,7 +30,7 @@ namespace PostProcessingComputeShaders
 			}
 		}
 
-		public PpcsUniformImage(RenderingDevice renderingDevice, PpcsShader shader, int set, PpcsImage image) : base(renderingDevice, shader, set)
+		public PpcsUniformImage(RenderingDevice renderingDevice, PpcsShader shader, int set, PpcsImage image, bool bindToShader = true) : base(renderingDevice, shader, set, bindToShader)
 		{
 			this.Image = image;
 		}

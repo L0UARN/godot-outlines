@@ -1,6 +1,6 @@
 using Godot;
 
-namespace GodotOutlines
+namespace Ppcs
 {
 	[GlobalClass]
 	public partial class Outliner : Node

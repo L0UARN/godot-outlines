@@ -1,7 +1,7 @@
 using System;
 using Godot;
 
-namespace GodotOutlines
+namespace Ppcs
 {
 	public class CsBufferBool : CsBuffer
 	{

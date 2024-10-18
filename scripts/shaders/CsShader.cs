@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Godot;
 
-namespace GodotOutlines
+namespace Ppcs
 {
 	public class CsShader
 	{

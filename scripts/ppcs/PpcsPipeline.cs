@@ -1,26 +1,20 @@
 using System.Collections.Generic;
 using Godot;
 
-namespace PostProcessingComputeShaders
+namespace Ppcs
 {
 	public class PpcsPipeline
 	{
 		protected RenderingDevice _Rd = null;
 		protected List<PpcsShader> _Steps = new();
-		protected PpcsImage _InputImage = null;
-		protected PpcsImage _OutputImage = null;
 		protected PpcsImage _BufferImage1 = null;
 		protected PpcsImage _BufferImage2 = null;
 		protected PpcsImage _CurrentInputImage = null;
 		protected PpcsImage _CurrentOutputImage = null;
 
-		public PpcsPipeline(RenderingDevice renderingDevice, PpcsImage inputImage, PpcsImage outputImage)
+		public PpcsPipeline(RenderingDevice renderingDevice)
 		{
 			this._Rd = renderingDevice;
-			this._InputImage = inputImage;
-			this._OutputImage = outputImage;
-			this._BufferImage1 = new(this._Rd, this._InputImage.Size);
-			this._BufferImage2 = new(this._Rd, this._InputImage.Size);
 		}
 
 		public void AddStep(PpcsShader newStepToAdd)
@@ -28,12 +22,45 @@ namespace PostProcessingComputeShaders
 			this._Steps.Add(newStepToAdd);
 		}
 
-		private void CycleBufferImages(int currentStep)
+		private void UpdateBufferImages(PpcsImage inputImage, PpcsImage outputImage)
 		{
-			if (currentStep == 0)
+			Vector2I imagesSize = new(Mathf.Min(inputImage.Size.X, outputImage.Size.X), Mathf.Min(inputImage.Size.Y, outputImage.Size.Y));
+
+			if (this._BufferImage1 == null)
 			{
-				this._CurrentInputImage = this._InputImage;
+				this._BufferImage1 = new(this._Rd, imagesSize);
+			}
+			else if (this._BufferImage1.Size != imagesSize)
+			{
+				this._BufferImage1.Size = imagesSize;
+			}
+
+			if (this._BufferImage2 == null)
+			{
+				this._BufferImage2 = new(this._Rd, imagesSize);
+			}
+			else if (this._BufferImage2.Size != imagesSize)
+			{
+				this._BufferImage2.Size = imagesSize;
+			}
+		}
+
+		private void CycleBufferImages(PpcsImage inputImage, PpcsImage outputImage, int currentStep)
+		{
+			if (this._Steps.Count == 1)
+			{
+				this._CurrentInputImage = inputImage;
+				this._CurrentOutputImage = outputImage;
+			}
+			else if (currentStep == 0)
+			{
+				this._CurrentInputImage = inputImage;
 				this._CurrentOutputImage = this._BufferImage1;
+			}
+			else if (currentStep == this._Steps.Count - 1)
+			{
+				this._CurrentInputImage = this._CurrentOutputImage;
+				this._CurrentOutputImage = outputImage;
 			}
 			else if (currentStep % 2 == 1)
 			{
@@ -47,23 +74,23 @@ namespace PostProcessingComputeShaders
 			}
 		}
 
-		public void Run()
+		public void Run(PpcsImage inputImage, PpcsImage outputImage)
 		{
+			UpdateBufferImages(inputImage, outputImage);
+
 			for (int i = 0; i < this._Steps.Count; i++)
 			{
-				CycleBufferImages(i);
-
+				CycleBufferImages(inputImage, outputImage, i);
 				this._Steps[i].InputImage = this._CurrentInputImage;
 				this._Steps[i].OutputImage = this._CurrentOutputImage;
+				this._Steps[i].Run();
 			}
-
-			this._CurrentOutputImage.CopyTo(this._OutputImage);
 		}
 
 		public void Cleanup(bool cleanupSteps = true)
 		{
-			this._BufferImage1.Cleanup();
-			this._BufferImage2.Cleanup();
+			this._BufferImage1?.Cleanup();
+			this._BufferImage2?.Cleanup();
 
 			if (!cleanupSteps)
 			{

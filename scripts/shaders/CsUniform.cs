@@ -1,6 +1,6 @@
 using Godot;
 
-namespace GodotOutlines
+namespace Ppcs
 {
 	public class CsUniform
 	{
