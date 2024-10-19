@@ -1,6 +1,6 @@
-[gd_scene load_steps=15 format=3 uid="uid://b2bgu3j7lj8xq"]
+[gd_scene load_steps=13 format=3 uid="uid://b2bgu3j7lj8xq"]
 
-[ext_resource type="Script" path="res://scripts/outlines/CompositorEffectOutlines.cs" id="3_54518"]
+[ext_resource type="PackedScene" uid="uid://4q2l35yt3uyr" path="res://outlines_layer.tscn" id="2_udepg"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7d8ek"]
 albedo_color = Color(1, 0, 0, 1)
@@ -25,18 +25,6 @@ albedo_color = Color(1, 0.878431, 0, 1)
 
 [sub_resource type="PrismMesh" id="PrismMesh_xo604"]
 material = SubResource("StandardMaterial3D_8173c")
-
-[sub_resource type="CompositorEffect" id="CompositorEffect_vv431"]
-resource_local_to_scene = false
-resource_name = ""
-enabled = true
-effect_callback_type = 4
-needs_motion_vectors = false
-needs_normal_roughness = false
-script = ExtResource("3_54518")
-
-[sub_resource type="Compositor" id="Compositor_2s0io"]
-compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_vv431")])
 
 [sub_resource type="Animation" id="Animation_y6ghe"]
 length = 0.001
@@ -116,6 +104,7 @@ mesh = SubResource("SphereMesh_k34qs")
 
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="Node3D"]
 transform = Transform3D(0.816984, 0, 0.576661, 0, 1, 0, -0.576661, 0, 0.816984, 0.842525, 0.6361, 0)
+layers = 524289
 mesh = SubResource("BoxMesh_ktjv2")
 skeleton = NodePath("../..")
 
@@ -128,7 +117,6 @@ skeleton = NodePath("../..")
 
 [node name="Camera3D" type="Camera3D" parent="Pivot"]
 transform = Transform3D(1, 0, 0, 0, 0.819152, 0.573576, 0, -0.573576, 0.819152, 0, 3, 4)
-compositor = SubResource("Compositor_2s0io")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="Pivot"]
 libraries = {
@@ -136,3 +124,5 @@ libraries = {
 }
 autoplay = "rotating_camera"
 speed_scale = 0.1
+
+[node name="OutlinesLayer" parent="." instance=ExtResource("2_udepg")]

@@ -9,5 +9,5 @@ layout(rgba8, set = 1, binding = 0) uniform restrict writeonly image2D output_im
 void main() {
 	ivec2 current_position = ivec2(gl_GlobalInvocationID.xy);
 	vec4 current_pixel = imageLoad(input_image, current_position);
-	imageStore(output_image, current_position, vec4(vec3(1.0) - current_pixel.xyz, 1.0));
+	imageStore(output_image, current_position, vec4(vec3(1.0) - current_pixel.xyz, current_pixel.a));
 }

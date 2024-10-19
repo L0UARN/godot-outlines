@@ -5,7 +5,7 @@ namespace Outlines
 	[GlobalClass]
 	public partial class OutlinerComponent : Node
 	{
-		[Export(PropertyHint.Range, "1,32,1")]
+		[Export(PropertyHint.Range, "1,20,1")]
 		public int OutlineLayer { get; set; } = 20;
 
 		private string _OutlinerGroupName = "";
@@ -98,11 +98,11 @@ namespace Outlines
 					{
 						if (value)
 						{
-							visualInstance.Layers |= (uint)Mathf.Pow(2, this.OutlineLayer - 1);
+							visualInstance.SetLayerMaskValue(this.OutlineLayer, true);
 						}
 						else
 						{
-							visualInstance.Layers &= ~(uint)Mathf.Pow(2, this.OutlineLayer - 1);
+							visualInstance.SetLayerMaskValue(this.OutlineLayer, false);
 						}
 					}
 				}
