@@ -24,11 +24,10 @@ namespace Outlines.Ppcs
 					Format = RenderingDevice.DataFormat.R8G8B8A8Unorm,
 					Width = (uint)value.X,
 					Height = (uint)value.Y,
-					UsageBits = RenderingDevice.TextureUsageBits.StorageBit | RenderingDevice.TextureUsageBits.CanCopyToBit | RenderingDevice.TextureUsageBits.CanCopyFromBit | RenderingDevice.TextureUsageBits.SamplingBit,
+					UsageBits = RenderingDevice.TextureUsageBits.StorageBit | RenderingDevice.TextureUsageBits.SamplingBit,
 				};
 
 				this._Rid = this._Rd.TextureCreate(textureFormat, new RDTextureView());
-				this._Rd.TextureClear(this._Rid, new Color(0.0f, 0.0f, 0.0f, 0.0f), 0, 1, 0, 1);
 				this._Size = value;
 			}
 		}
@@ -62,12 +61,6 @@ namespace Outlines.Ppcs
 		{
 			this._Rd = renderingDevice;
 			this.Rid = rid;
-		}
-
-		public void CopyTo(PpcsImage otherImage)
-		{
-			Vector3 sizeToCopy = new(Mathf.Min(this._Size.X, otherImage.Size.X), Mathf.Min(this._Size.Y, this._Size.Y), 1);
-			_Rd.TextureCopy(this._Rid, otherImage.Rid, Vector3.Zero, Vector3.Zero, sizeToCopy, 0, 0, 0, 0);
 		}
 
 		public void Cleanup()

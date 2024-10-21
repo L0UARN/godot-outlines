@@ -41,6 +41,7 @@ namespace Outlines
 				scaledSize.Y % 8 == 0 ? scaledSize.Y : scaledSize.Y + (8 - scaledSize.Y % 8)
 			);
 
+			// Very important so the outlines layer is to be applied on top of the existing layer and does not obscure it
 			this.OutlinesCaptureViewport.TransparentBg = true;
 		}
 
@@ -92,6 +93,12 @@ namespace Outlines
 			this.OutlinesDisplayRect.StretchMode = TextureRect.StretchModeEnum.Scale;
 		}
 
+		private void HandleSizeChanged()
+		{
+			SetupCaptureViewport();
+			SetupDisplayRect();
+		}
+
 		public override void _Ready()
 		{
 			base._Ready();
@@ -99,6 +106,9 @@ namespace Outlines
 			SetupCaptureViewport();
 			SetupCaptureCamera();
 			SetupDisplayRect();
+
+			Viewport mainViewport = this.GetViewport();
+			mainViewport.SizeChanged += HandleSizeChanged;
 		}
 
 		private void UpdateCaptureCamera()
@@ -109,6 +119,7 @@ namespace Outlines
 				return;
 			}
 
+			// Mimic the main camera
 			this.OutlinesCaptureCamera.GlobalTransform = mainCamera.GlobalTransform;
 			this.OutlinesCaptureCamera.Projection = mainCamera.Projection;
 			this.OutlinesCaptureCamera.Fov = mainCamera.Fov;

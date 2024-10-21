@@ -33,7 +33,7 @@ namespace Outlines.Ppcs
 
 		public void Cleanup()
 		{
-			if (!this._Rid.IsValid)
+			if (!this._Rid.IsValid || !this._Rd.UniformSetIsValid(this._Rid))
 			{
 				return;
 			}
