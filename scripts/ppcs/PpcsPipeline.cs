@@ -76,11 +76,11 @@ namespace Outlines.Ppcs
 
 		public void Run(PpcsImage inputImage, PpcsImage outputImage)
 		{
-			UpdateBufferImages(inputImage, outputImage);
+			this.UpdateBufferImages(inputImage, outputImage);
 
 			for (int i = 0; i < this._Steps.Count; i++)
 			{
-				CycleBufferImages(inputImage, outputImage, i);
+				this.CycleBufferImages(inputImage, outputImage, i);
 				this._Steps[i].InputImage = this._CurrentInputImage;
 				this._Steps[i].OutputImage = this._CurrentOutputImage;
 				this._Steps[i].Run();

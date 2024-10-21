@@ -17,7 +17,7 @@ namespace Outlines.Ppcs
 					return;
 				}
 
-				Cleanup();
+				this.Cleanup();
 
 				RDTextureFormat textureFormat = new()
 				{
@@ -43,7 +43,7 @@ namespace Outlines.Ppcs
 					return;
 				}
 
-				Cleanup();
+				this.Cleanup();
 
 				RDTextureFormat format = this._Rd.TextureGetFormat(value);
 				this._Size = new((int)format.Width, (int)format.Height);
@@ -65,13 +65,13 @@ namespace Outlines.Ppcs
 
 		public void Cleanup()
 		{
-			if (!this._Rid.IsValid || !_Rd.TextureIsValid(this._Rid))
+			if (!this._Rid.IsValid || !this._Rd.TextureIsValid(this._Rid))
 			{
 				return;
 			}
 
-			_Rd.FreeRid(_Rid);
-			_Rid = new();
+			this._Rd.FreeRid(_Rid);
+			this._Rid = new();
 		}
 	}
 }

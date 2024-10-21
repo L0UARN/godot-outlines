@@ -12,8 +12,8 @@ namespace Outlines
 
 		private void RegisterNode(Node node)
 		{
-			node.ChildEnteredTree += RegisterNode;
-			node.ChildExitingTree += UnregisterNode;
+			node.ChildEnteredTree += this.RegisterNode;
+			node.ChildExitingTree += this.UnregisterNode;
 
 			if (node is VisualInstance3D meshInstance)
 			{
@@ -22,14 +22,14 @@ namespace Outlines
 
 			foreach (Node child in node.GetChildren())
 			{
-				RegisterNode(child);
+				this.RegisterNode(child);
 			}
 		}
 
 		private void UnregisterNode(Node node)
 		{
-			node.ChildEnteredTree -= RegisterNode;
-			node.ChildExitingTree -= UnregisterNode;
+			node.ChildEnteredTree -= this.RegisterNode;
+			node.ChildExitingTree -= this.UnregisterNode;
 
 			if (node.IsInGroup(this._OutlinerGroupName))
 			{
@@ -38,7 +38,7 @@ namespace Outlines
 
 			foreach (Node child in node.GetChildren())
 			{
-				UnregisterNode(child);
+				this.UnregisterNode(child);
 			}
 		}
 
@@ -57,12 +57,12 @@ namespace Outlines
 
 				if (this._NodesToOutline != null)
 				{
-					UnregisterNode(this._NodesToOutline);
+					this.UnregisterNode(this._NodesToOutline);
 				}
 
 				if (value != null)
 				{
-					RegisterNode(value);
+					this.RegisterNode(value);
 				}
 
 				this._NodesToOutline = value;
@@ -73,11 +73,11 @@ namespace Outlines
 		{
 			base._Ready();
 
-			this._OutlinerGroupName = $"Outliner_{GetInstanceId()}";
+			this._OutlinerGroupName = $"Outliner_{this.GetInstanceId()}";
 
 			if (this._NodesToOutline != null)
 			{
-				RegisterNode(this._NodesToOutline);
+				this.RegisterNode(this._NodesToOutline);
 			}
 		}
 
@@ -107,7 +107,7 @@ namespace Outlines
 					}
 				}
 
-				_Enabled = value;
+				this._Enabled = value;
 			}
 		}
 	}

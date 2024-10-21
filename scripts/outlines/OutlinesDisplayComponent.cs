@@ -49,7 +49,7 @@ namespace Outlines
 		{
 			for (int i = 1; i < 21; i++)
 			{
-				if (i == OutlineLayer)
+				if (i == this.OutlineLayer)
 				{
 					this.OutlinesCaptureCamera.SetCullMaskValue(i, true);
 				}
@@ -95,25 +95,25 @@ namespace Outlines
 
 		private void HandleSizeChanged()
 		{
-			SetupCaptureViewport();
-			SetupDisplayRect();
+			this.SetupCaptureViewport();
+			this.SetupDisplayRect();
 		}
 
 		public override void _Ready()
 		{
 			base._Ready();
 
-			SetupCaptureViewport();
-			SetupCaptureCamera();
-			SetupDisplayRect();
+			this.SetupCaptureViewport();
+			this.SetupCaptureCamera();
+			this.SetupDisplayRect();
 
 			Viewport mainViewport = this.GetViewport();
-			mainViewport.SizeChanged += HandleSizeChanged;
+			mainViewport.SizeChanged += this.HandleSizeChanged;
 		}
 
 		private void UpdateCaptureCamera()
 		{
-			Camera3D mainCamera = GetViewport().GetCamera3D();
+			Camera3D mainCamera = this.GetViewport().GetCamera3D();
 			if (mainCamera == null)
 			{
 				return;
@@ -136,7 +136,7 @@ namespace Outlines
 		{
 			base._Process(delta);
 
-			UpdateCaptureCamera();
+			this.UpdateCaptureCamera();
 		}
 	}
 }
