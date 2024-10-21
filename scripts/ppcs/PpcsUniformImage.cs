@@ -16,7 +16,7 @@ namespace Outlines.Ppcs
 					return;
 				}
 
-				Cleanup();
+				this.Cleanup();
 
 				RDUniform uniform = new()
 				{
