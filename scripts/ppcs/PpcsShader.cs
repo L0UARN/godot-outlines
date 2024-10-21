@@ -22,7 +22,7 @@ namespace Outlines.Ppcs
 			get => this._InputImage;
 			set
 			{
-				if (this._InputImage != null && value.Rid == this._InputImage.Rid)
+				if (value.Rid.Equals(this._InputImage?.Rid))
 				{
 					return;
 				}
@@ -36,7 +36,7 @@ namespace Outlines.Ppcs
 					this._InputImageUniform.Image = value;
 				}
 
-				this._InputImage = value;
+				this._InputImage = new(this._Rd, value.Rid);
 			}
 		}
 
@@ -47,7 +47,7 @@ namespace Outlines.Ppcs
 			get => _OutputImage;
 			set
 			{
-				if (this._OutputImage != null && value.Rid == this._OutputImage.Rid)
+				if (value.Rid.Equals(this._OutputImage?.Rid))
 				{
 					return;
 				}
@@ -61,7 +61,7 @@ namespace Outlines.Ppcs
 					this._OutputImageUniform.Image = value;
 				}
 
-				this._OutputImage = value;
+				this._OutputImage = new(this._Rd, value.Rid);
 			}
 		}
 
@@ -111,11 +111,6 @@ namespace Outlines.Ppcs
 
 		public void Cleanup(bool cleanupUniforms = true)
 		{
-			if (!this.Rid.IsValid)
-			{
-				return;
-			}
-
 			this._InputImageUniform?.Cleanup();
 			this._OutputImageUniform?.Cleanup();
 
@@ -127,7 +122,12 @@ namespace Outlines.Ppcs
 				}
 			}
 
-			this._Rd.FreeRid(this._PipelineRid);
+			if (this._Rd.ComputePipelineIsValid(this._PipelineRid))
+			{
+				this._Rd.FreeRid(this._PipelineRid);
+				this._PipelineRid = new();
+			}
+
 			PpcsShaderPool.CleanupShader(this._Rd, this._ShaderPath);
 		}
 	}

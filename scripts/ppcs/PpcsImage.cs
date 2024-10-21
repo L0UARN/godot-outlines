@@ -12,7 +12,7 @@ namespace Outlines.Ppcs
 			get => this._Size;
 			set
 			{
-				if (value == this._Size)
+				if (value.Equals(this._Size))
 				{
 					return;
 				}
@@ -38,7 +38,7 @@ namespace Outlines.Ppcs
 			get => this._Rid;
 			set
 			{
-				if (value == this._Rid)
+				if (value.Equals(this._Rid))
 				{
 					return;
 				}
@@ -65,7 +65,7 @@ namespace Outlines.Ppcs
 
 		public void Cleanup()
 		{
-			if (!_Rid.IsValid)
+			if (!this._Rid.IsValid || !_Rd.TextureIsValid(this._Rid))
 			{
 				return;
 			}

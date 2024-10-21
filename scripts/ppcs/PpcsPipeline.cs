@@ -92,14 +92,12 @@ namespace Outlines.Ppcs
 			this._BufferImage1?.Cleanup();
 			this._BufferImage2?.Cleanup();
 
-			if (!cleanupSteps)
+			if (cleanupSteps)
 			{
-				return;
-			}
-
-			foreach (PpcsShader step in this._Steps)
-			{
-				step.Cleanup();
+				foreach (PpcsShader step in this._Steps)
+				{
+					step.Cleanup();
+				}
 			}
 		}
 	}

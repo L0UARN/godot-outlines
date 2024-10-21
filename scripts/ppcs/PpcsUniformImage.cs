@@ -11,7 +11,7 @@ namespace Outlines.Ppcs
 			get => this._Image;
 			set
 			{
-				if (value == this._Image)
+				if (value.Rid.Equals(this._Image?.Rid))
 				{
 					return;
 				}
@@ -25,8 +25,8 @@ namespace Outlines.Ppcs
 				};
 				uniform.AddId(value.Rid);
 
-				this._Rid = this._Rd.UniformSetCreate(new Array<RDUniform> { uniform }, this._Shader.Rid, (uint)_Set);
-				this._Image = value;
+				this.Rid = this._Rd.UniformSetCreate(new Array<RDUniform> { uniform }, this._Shader.Rid, (uint)this.Set);
+				this._Image = new(this._Rd, value.Rid);
 			}
 		}
 

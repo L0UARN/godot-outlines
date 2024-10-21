@@ -42,7 +42,7 @@ namespace Outlines.Ppcs
 
 		public static void CleanupShader(RenderingDevice renderingDevice, string shaderPath)
 		{
-			if (!PpcsShaderPool._Rids.ContainsKey(shaderPath) || !PpcsShaderPool._Rids[shaderPath].IsValid)
+			if (!PpcsShaderPool._Rids.ContainsKey(shaderPath))
 			{
 				return;
 			}
@@ -53,7 +53,11 @@ namespace Outlines.Ppcs
 				return;
 			}
 
-			renderingDevice.FreeRid(PpcsShaderPool._Rids[shaderPath]);
+			if (PpcsShaderPool._Rids[shaderPath].IsValid)
+			{
+				renderingDevice.FreeRid(PpcsShaderPool._Rids[shaderPath]);
+			}
+
 			PpcsShaderPool._Rids.Remove(shaderPath);
 			PpcsShaderPool._References.Remove(shaderPath);
 		}

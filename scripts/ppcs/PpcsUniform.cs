@@ -7,23 +7,14 @@ namespace Outlines.Ppcs
 		protected RenderingDevice _Rd = null;
 		protected PpcsShader _Shader = null;
 
-		protected int _Set = -1;
-		public int Set
-		{
-			get => this._Set;
-		}
-
-		protected Rid _Rid = new();
-		public Rid Rid
-		{
-			get => this._Rid;
-		}
+		public int Set { get; protected set; } = -1;
+		public Rid Rid { get; protected set; } = new();
 
 		public PpcsUniform(RenderingDevice renderingDevice, PpcsShader shader, int set, bool bindToShader = true)
 		{
 			this._Rd = renderingDevice;
 			this._Shader = shader;
-			this._Set = set;
+			this.Set = set;
 
 			if (bindToShader)
 			{
@@ -33,13 +24,13 @@ namespace Outlines.Ppcs
 
 		public void Cleanup()
 		{
-			if (!this._Rid.IsValid || !this._Rd.UniformSetIsValid(this._Rid))
+			if (!this.Rid.IsValid || !this._Rd.UniformSetIsValid(this.Rid))
 			{
 				return;
 			}
 
-			this._Rd.FreeRid(this._Rid);
-			this._Rid = new();
+			this._Rd.FreeRid(this.Rid);
+			this.Rid = new();
 		}
 	}
 }
