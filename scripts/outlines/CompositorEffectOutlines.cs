@@ -1,3 +1,5 @@
+using System;
+using System.ComponentModel;
 using Godot;
 using Outlines.Ppcs;
 
@@ -6,6 +8,30 @@ namespace Outlines
 	[GlobalClass]
 	public partial class CompositorEffectOutlines : CompositorEffect
 	{
+		private int _StepsNeeded = 2;
+		private int _OutlinesSize = 4;
+		[Export]
+		public int OutlinesSize
+		{
+			get => this._OutlinesSize;
+			set
+			{
+				if (Engine.IsEditorHint())
+				{
+					this._OutlinesSize = value;
+					return;
+				}
+
+				if (value == this._OutlinesSize)
+				{
+					return;
+				}
+
+				this._StepsNeeded = Mathf.CeilToInt(Math.Log2(value));
+				this._OutlinesSize = value;
+			}
+		}
+
 		private RenderingDevice _Rd = null;
 		private PpcsPipeline _Pipeline = null;
 
@@ -17,14 +43,20 @@ namespace Outlines
 				return;
 			}
 
-			PpcsShader colorInversionShader = new(this._Rd, "res://shaders/test.glsl");
-			PpcsShader darkeningShader = new(this._Rd, "res://shaders/test2.glsl");
-			PpcsShader redeningShader = new(this._Rd, "res://shaders/test3.glsl");
-
 			this._Pipeline = new(this._Rd);
-			this._Pipeline.AddStep(colorInversionShader);
-			this._Pipeline.AddStep(darkeningShader);
-			this._Pipeline.AddStep(redeningShader);
+
+			PpcsShader jfaInit = new(this._Rd, "res://shaders/jfa_init.glsl");
+			this._Pipeline.AddStep(jfaInit);
+
+			// TODO: find a way to make that more cleanup-able
+			for (int i = 0; i < this._StepsNeeded; i++)
+			{
+				PpcsShader jfaStep = new(this._Rd, "res://shaders/jfa_step.glsl");
+				PpcsBuffer stepSizeBuffer = new(this._Rd, BitConverter.GetBytes(i));
+				PpcsUniformBuffer stepSizeBufferUniform = new(this._Rd, jfaStep, 2, stepSizeBuffer);
+				jfaStep.BindUniform(stepSizeBufferUniform);
+				this._Pipeline.AddStep(jfaStep);
+			}
 		}
 
 		public CompositorEffectOutlines() : base()

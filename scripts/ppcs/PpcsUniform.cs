@@ -10,16 +10,11 @@ namespace Outlines.Ppcs
 		public int Set { get; protected set; } = -1;
 		public Rid Rid { get; protected set; } = new();
 
-		public PpcsUniform(RenderingDevice renderingDevice, PpcsShader shader, int set, bool bindToShader = true)
+		public PpcsUniform(RenderingDevice renderingDevice, PpcsShader shader, int set)
 		{
 			this._Rd = renderingDevice;
 			this._Shader = shader;
 			this.Set = set;
-
-			if (bindToShader)
-			{
-				this._Shader.BindUniform(this);
-			}
 		}
 
 		public void Cleanup()

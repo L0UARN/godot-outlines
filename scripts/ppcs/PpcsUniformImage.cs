@@ -30,7 +30,7 @@ namespace Outlines.Ppcs
 			}
 		}
 
-		public PpcsUniformImage(RenderingDevice renderingDevice, PpcsShader shader, int set, PpcsImage image, bool bindToShader = true) : base(renderingDevice, shader, set, bindToShader)
+		public PpcsUniformImage(RenderingDevice renderingDevice, PpcsShader shader, int set, PpcsImage image) : base(renderingDevice, shader, set)
 		{
 			this.Image = image;
 		}
