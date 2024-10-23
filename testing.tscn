@@ -116,7 +116,7 @@ skeleton = NodePath("../..")
 [node name="Pivot" type="Node3D" parent="."]
 
 [node name="Camera3D" type="Camera3D" parent="Pivot"]
-transform = Transform3D(1, 0, 0, 0, 0.819152, 0.573576, 0, -0.573576, 0.819152, 0, 3, 4)
+transform = Transform3D(1, 0, 0, 0, 0.922154, 0.386824, 0, -0.386824, 0.922154, 0.864, 1.86566, 3.07162)
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="Pivot"]
 libraries = {

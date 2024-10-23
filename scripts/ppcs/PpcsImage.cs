@@ -21,7 +21,7 @@ namespace Outlines.Ppcs
 
 				RDTextureFormat textureFormat = new()
 				{
-					Format = RenderingDevice.DataFormat.R8G8B8A8Unorm,
+					Format = RenderingDevice.DataFormat.R16G16B16A16Unorm,
 					Width = (uint)value.X,
 					Height = (uint)value.Y,
 					UsageBits = RenderingDevice.TextureUsageBits.StorageBit | RenderingDevice.TextureUsageBits.SamplingBit,

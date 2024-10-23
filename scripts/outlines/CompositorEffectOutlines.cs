@@ -13,8 +13,8 @@ namespace Outlines
 			this._StepsNeeded = Mathf.CeilToInt(Math.Log2(this._OutlinesSize));
 		}
 
-		private int _StepsNeeded = 2;
-		private int _OutlinesSize = 4;
+		private int _StepsNeeded = -1;
+		private int _OutlinesSize = 16;
 		[Export]
 		public int OutlinesSize
 		{
@@ -53,8 +53,6 @@ namespace Outlines
 			PpcsShader jfaInit = new(this._Rd, "res://shaders/jfa_init.glsl");
 			this._Pipeline.Steps.Add(jfaInit);
 
-			GD.Print("Steps needed: ", this._StepsNeeded);
-
 			for (int i = this._StepsNeeded - 1; i >= 0; i--)
 			{
 				PpcsShader jfaStep = new(this._Rd, "res://shaders/jfa_step.glsl");
@@ -62,9 +60,13 @@ namespace Outlines
 				PpcsUniformBuffer stepSizeBufferUniform = new(this._Rd, jfaStep, 2, stepSizeBuffer);
 				jfaStep.Uniforms.Add(stepSizeBufferUniform);
 				this._Pipeline.Steps.Add(jfaStep);
-
-				GD.Print("2 ^ ", i ," = ", Mathf.Pow(2, i));
 			}
+
+			PpcsShader jfaOutlines = new(this._Rd, "res://shaders/jfa_cleanup.glsl");
+			PpcsBuffer outlinesSizeBuffer = new(this._Rd, BitConverter.GetBytes(this._OutlinesSize));
+			PpcsUniformBuffer outlinesSizeBufferUniform = new(this._Rd, jfaOutlines, 2, outlinesSizeBuffer);
+			jfaOutlines.Uniforms.Add(outlinesSizeBufferUniform);
+			this._Pipeline.Steps.Add(jfaOutlines);
 		}
 
 		public CompositorEffectOutlines() : base()
