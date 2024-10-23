@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Godot;
 using Outlines.Ppcs;
 
@@ -62,11 +61,11 @@ namespace Outlines
 				this._Pipeline.Steps.Add(jfaStep);
 			}
 
-			PpcsShader jfaOutlines = new(this._Rd, "res://shaders/jfa_cleanup.glsl");
-			PpcsBuffer outlinesSizeBuffer = new(this._Rd, BitConverter.GetBytes(this._OutlinesSize));
-			PpcsUniformBuffer outlinesSizeBufferUniform = new(this._Rd, jfaOutlines, 2, outlinesSizeBuffer);
-			jfaOutlines.Uniforms.Add(outlinesSizeBufferUniform);
-			this._Pipeline.Steps.Add(jfaOutlines);
+			// PpcsShader jfaOutlines = new(this._Rd, "res://shaders/jfa_cleanup.glsl");
+			// PpcsBuffer outlinesSizeBuffer = new(this._Rd, BitConverter.GetBytes(this._OutlinesSize));
+			// PpcsUniformBuffer outlinesSizeBufferUniform = new(this._Rd, jfaOutlines, 2, outlinesSizeBuffer);
+			// jfaOutlines.Uniforms.Add(outlinesSizeBufferUniform);
+			// this._Pipeline.Steps.Add(jfaOutlines);
 		}
 
 		public CompositorEffectOutlines() : base()

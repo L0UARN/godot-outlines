@@ -16,6 +16,11 @@ void main() {
 	ivec2 current_position = ivec2(gl_GlobalInvocationID.xy);
 	vec4 current_pixel = imageLoad(input_image, current_position);
 
+	// if (isinf(current_pixel.x) && isinf(current_pixel.y)) {
+	// 	imageStore(output_image, current_position, vec4(0.0f));
+	// 	return;
+	// }
+
 	vec2 image_size = vec2(imageSize(input_image));
 	vec2 pixel_size = vec2(1.0f) / image_size;
 
