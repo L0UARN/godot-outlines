@@ -13,7 +13,7 @@ namespace Outlines
 		}
 
 		private int _StepsNeeded = -1;
-		private int _OutlinesSize = 16;
+		private int _OutlinesSize = 6;
 		[Export]
 		public int OutlinesSize
 		{
@@ -33,6 +33,28 @@ namespace Outlines
 
 				this._OutlinesSize = value;
 				this.SetupStepsNeeded();
+			}
+		}
+
+		private int _GlowRadius = 4;
+		[Export(PropertyHint.Range, "0,32,1")]
+		public int GlowRadius
+		{
+			get => this._GlowRadius;
+			set
+			{
+				if (Engine.IsEditorHint())
+				{
+					this._GlowRadius = value;
+					return;
+				}
+
+				if (value == this._GlowRadius)
+				{
+					return;
+				}
+
+				this._GlowRadius = value;
 			}
 		}
 
@@ -66,6 +88,27 @@ namespace Outlines
 			PpcsUniformBuffer outlinesSizeBufferUniform = new(this._Rd, jfaOutlines, 2, outlinesSizeBuffer);
 			jfaOutlines.Uniforms.Add(outlinesSizeBufferUniform);
 			this._Pipeline.Steps.Add(jfaOutlines);
+
+			if (this._GlowRadius > 0)
+			{
+				PpcsShader glowPass1 = new(this._Rd, "res://shaders/glow.glsl");
+				PpcsBuffer glowPass1SizeBuffer = new(this._Rd, BitConverter.GetBytes(this._GlowRadius));
+				PpcsUniformBuffer glowPass1SizeBufferUniform = new(this._Rd, glowPass1, 2, glowPass1SizeBuffer);
+				glowPass1.Uniforms.Add(glowPass1SizeBufferUniform);
+				PpcsBuffer glowPass1DirectionBuffer = new(this._Rd, BitConverter.GetBytes(false));
+				PpcsUniformBuffer glowPass1DirectionBufferUniform = new(this._Rd, glowPass1, 3, glowPass1DirectionBuffer);
+				glowPass1.Uniforms.Add(glowPass1DirectionBufferUniform);
+				this._Pipeline.Steps.Add(glowPass1);
+
+				PpcsShader glowPass2 = new(this._Rd, "res://shaders/glow.glsl");
+				PpcsBuffer glowPass2SizeBuffer = new(this._Rd, BitConverter.GetBytes(this._GlowRadius));
+				PpcsUniformBuffer glowPass2SizeBufferUniform = new(this._Rd, glowPass2, 2, glowPass2SizeBuffer);
+				glowPass2.Uniforms.Add(glowPass2SizeBufferUniform);
+				PpcsBuffer glowPass2DirectionBuffer = new(this._Rd, BitConverter.GetBytes(true));
+				PpcsUniformBuffer glowPass2DirectionBufferUniform = new(this._Rd, glowPass2, 3, glowPass2DirectionBuffer);
+				glowPass2.Uniforms.Add(glowPass2DirectionBufferUniform);
+				this._Pipeline.Steps.Add(glowPass2);
+			}
 		}
 
 		public CompositorEffectOutlines() : base()
