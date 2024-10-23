@@ -6,20 +6,15 @@ namespace Outlines.Ppcs
 	public class PpcsPipeline
 	{
 		protected RenderingDevice _Rd = null;
-		protected List<PpcsShader> _Steps = new();
 		protected PpcsImage _BufferImage1 = null;
 		protected PpcsImage _BufferImage2 = null;
 		protected PpcsImage _CurrentInputImage = null;
 		protected PpcsImage _CurrentOutputImage = null;
+		public List<PpcsShader> Steps { get; private set; } = new();
 
 		public PpcsPipeline(RenderingDevice renderingDevice)
 		{
 			this._Rd = renderingDevice;
-		}
-
-		public void AddStep(PpcsShader newStepToAdd)
-		{
-			this._Steps.Add(newStepToAdd);
 		}
 
 		private void UpdateBufferImages(PpcsImage inputImage, PpcsImage outputImage)
@@ -47,7 +42,7 @@ namespace Outlines.Ppcs
 
 		private void CycleBufferImages(PpcsImage inputImage, PpcsImage outputImage, int currentStep)
 		{
-			if (this._Steps.Count == 1)
+			if (this.Steps.Count == 1)
 			{
 				this._CurrentInputImage = inputImage;
 				this._CurrentOutputImage = outputImage;
@@ -57,7 +52,7 @@ namespace Outlines.Ppcs
 				this._CurrentInputImage = inputImage;
 				this._CurrentOutputImage = this._BufferImage1;
 			}
-			else if (currentStep == this._Steps.Count - 1)
+			else if (currentStep == this.Steps.Count - 1)
 			{
 				this._CurrentInputImage = this._CurrentOutputImage;
 				this._CurrentOutputImage = outputImage;
@@ -78,27 +73,19 @@ namespace Outlines.Ppcs
 		{
 			this.UpdateBufferImages(inputImage, outputImage);
 
-			for (int i = 0; i < this._Steps.Count; i++)
+			for (int i = 0; i < this.Steps.Count; i++)
 			{
 				this.CycleBufferImages(inputImage, outputImage, i);
-				this._Steps[i].InputImage = this._CurrentInputImage;
-				this._Steps[i].OutputImage = this._CurrentOutputImage;
-				this._Steps[i].Run();
+				this.Steps[i].InputImage = this._CurrentInputImage;
+				this.Steps[i].OutputImage = this._CurrentOutputImage;
+				this.Steps[i].Run();
 			}
 		}
 
-		public void Cleanup(bool cleanupSteps = true)
+		public void Cleanup()
 		{
 			this._BufferImage1?.Cleanup();
 			this._BufferImage2?.Cleanup();
-
-			if (cleanupSteps)
-			{
-				foreach (PpcsShader step in this._Steps)
-				{
-					step.Cleanup();
-				}
-			}
 		}
 	}
 }

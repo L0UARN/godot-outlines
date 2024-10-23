@@ -4,9 +4,9 @@ namespace Outlines.Ppcs
 {
 	public class PpcsImage
 	{
-		protected RenderingDevice _Rd = null;
+		private RenderingDevice _Rd = null;
 
-		protected Vector2I _Size = Vector2I.Zero;
+		private Vector2I _Size = Vector2I.Zero;
 		public Vector2I Size
 		{
 			get => this._Size;
@@ -32,7 +32,7 @@ namespace Outlines.Ppcs
 			}
 		}
 
-		protected Rid _Rid = new();
+		private Rid _Rid = new();
 		public Rid Rid
 		{
 			get => this._Rid;

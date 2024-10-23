@@ -4,10 +4,10 @@ namespace Outlines.Ppcs
 {
 	public class PpcsBuffer
 	{
-		protected RenderingDevice _Rd = null;
-		public Rid Rid { get; protected set; } = new();
+		private RenderingDevice _Rd = null;
+		public Rid Rid { get; private set; } = new();
 
-		protected byte[] _Data = null;
+		private byte[] _Data = null;
 		public byte[] Data
 		{
 			get => this._Data;
@@ -40,6 +40,16 @@ namespace Outlines.Ppcs
 		{
 			this._Rd = renderingDevice;
 			this.Data = data;
+		}
+
+		public void Cleanup()
+		{
+			if (!this.Rid.IsValid)
+			{
+				return;
+			}
+
+			this._Rd.FreeRid(this.Rid);
 		}
 	}
 }

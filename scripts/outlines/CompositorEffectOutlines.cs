@@ -1,5 +1,5 @@
 using System;
-using System.ComponentModel;
+using System.Collections.Generic;
 using Godot;
 using Outlines.Ppcs;
 
@@ -8,6 +8,11 @@ namespace Outlines
 	[GlobalClass]
 	public partial class CompositorEffectOutlines : CompositorEffect
 	{
+		private void SetupStepsNeeded()
+		{
+			this._StepsNeeded = Mathf.CeilToInt(Math.Log2(this._OutlinesSize));
+		}
+
 		private int _StepsNeeded = 2;
 		private int _OutlinesSize = 4;
 		[Export]
@@ -27,8 +32,8 @@ namespace Outlines
 					return;
 				}
 
-				this._StepsNeeded = Mathf.CeilToInt(Math.Log2(value));
 				this._OutlinesSize = value;
+				this.SetupStepsNeeded();
 			}
 		}
 
@@ -46,22 +51,27 @@ namespace Outlines
 			this._Pipeline = new(this._Rd);
 
 			PpcsShader jfaInit = new(this._Rd, "res://shaders/jfa_init.glsl");
-			this._Pipeline.AddStep(jfaInit);
+			this._Pipeline.Steps.Add(jfaInit);
 
-			// TODO: find a way to make that more cleanup-able
-			for (int i = 0; i < this._StepsNeeded; i++)
+			GD.Print("Steps needed: ", this._StepsNeeded);
+
+			for (int i = this._StepsNeeded - 1; i >= 0; i--)
 			{
 				PpcsShader jfaStep = new(this._Rd, "res://shaders/jfa_step.glsl");
-				PpcsBuffer stepSizeBuffer = new(this._Rd, BitConverter.GetBytes(i));
+				PpcsBuffer stepSizeBuffer = new(this._Rd, BitConverter.GetBytes((int)Mathf.Pow(2, i)));
 				PpcsUniformBuffer stepSizeBufferUniform = new(this._Rd, jfaStep, 2, stepSizeBuffer);
-				jfaStep.BindUniform(stepSizeBufferUniform);
-				this._Pipeline.AddStep(jfaStep);
+				jfaStep.Uniforms.Add(stepSizeBufferUniform);
+				this._Pipeline.Steps.Add(jfaStep);
+
+				GD.Print("2 ^ ", i ," = ", Mathf.Pow(2, i));
 			}
 		}
 
 		public CompositorEffectOutlines() : base()
 		{
 			this.EffectCallbackType = EffectCallbackTypeEnum.PostTransparent;
+			this.SetupStepsNeeded();
+
 			RenderingServer.CallOnRenderThread(Callable.From(this.SetupEffect));
 		}
 
@@ -83,14 +93,42 @@ namespace Outlines
 			}
 		}
 
+		private void Cleanup()
+		{
+			foreach (PpcsShader shader in this._Pipeline.Steps)
+			{
+				foreach (PpcsUniform uniform in shader.Uniforms)
+				{
+					// The uniforms must be cleaned up before the objects
+					uniform.Cleanup();
+
+					if (uniform is PpcsUniformBuffer bufferUniform)
+					{
+						bufferUniform.Buffer.Cleanup();
+					}
+					else if (uniform is PpcsUniformImage imageUniform)
+					{
+						imageUniform.Image.Cleanup();
+					}
+				}
+
+				// The shaders must be cleaned up after the uniforms
+				shader.Cleanup();
+			}
+
+			this._Pipeline.Cleanup();
+		}
+
 		public override void _Notification(int what)
 		{
 			base._Notification(what);
 
-			if (what == NotificationPredelete)
+			if (what != NotificationPredelete)
 			{
-				this._Pipeline.Cleanup();
+				return;
 			}
+
+			this.Cleanup();
 		}
 	}
 }

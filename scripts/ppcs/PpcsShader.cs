@@ -29,7 +29,7 @@ namespace Outlines.Ppcs
 
 				if (this._InputImageUniform == null)
 				{
-					this._InputImageUniform = new(this._Rd, this, 0, value, false);
+					this._InputImageUniform = new(this._Rd, this, 0, value);
 				}
 				else
 				{
@@ -54,7 +54,7 @@ namespace Outlines.Ppcs
 
 				if (this._OutputImageUniform == null)
 				{
-					this._OutputImageUniform = new(this._Rd, this, 0, value, false);
+					this._OutputImageUniform = new(this._Rd, this, 0, value);
 				}
 				else
 				{
@@ -65,12 +65,7 @@ namespace Outlines.Ppcs
 			}
 		}
 
-		protected List<PpcsUniform> _Uniforms = new();
-
-		public void BindUniform(PpcsUniform uniform)
-		{
-			this._Uniforms.Add(uniform);
-		}
+		public List<PpcsUniform> Uniforms { get; protected set; } = new();
 
 		public PpcsShader(RenderingDevice renderingDevice, string shaderPath)
 		{
@@ -95,7 +90,7 @@ namespace Outlines.Ppcs
 			this._Rd.ComputeListBindUniformSet(computeList, this._InputImageUniform.Rid, 0);
 			this._Rd.ComputeListBindUniformSet(computeList, this._OutputImageUniform.Rid, 1);
 
-			foreach (PpcsUniform uniform in this._Uniforms)
+			foreach (PpcsUniform uniform in this.Uniforms)
 			{
 				this._Rd.ComputeListBindUniformSet(computeList, uniform.Rid, (uint)uniform.Set);
 			}
@@ -109,20 +104,12 @@ namespace Outlines.Ppcs
 			this._Rd.ComputeListEnd();
 		}
 
-		public void Cleanup(bool cleanupUniforms = true)
+		public void Cleanup()
 		{
 			this._InputImageUniform?.Cleanup();
 			this._OutputImageUniform?.Cleanup();
 
-			if (cleanupUniforms)
-			{
-				foreach (PpcsUniform uniform in this._Uniforms)
-				{
-					uniform.Cleanup();
-				}
-			}
-
-			if (this._Rd.ComputePipelineIsValid(this._PipelineRid))
+			if (this._PipelineRid.IsValid && this._Rd.ComputePipelineIsValid(this._PipelineRid))
 			{
 				this._Rd.FreeRid(this._PipelineRid);
 				this._PipelineRid = new();
