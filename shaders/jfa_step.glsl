@@ -7,8 +7,6 @@ layout(rgba8, set = 0, binding = 0) uniform restrict readonly image2D input_imag
 layout(rgba8, set = 1, binding = 0) uniform restrict writeonly image2D output_image;
 layout(std430, set = 2, binding = 0) buffer restrict readonly JumpDistanceBuffer { int jump; } jdb;
 
-const float infinity = 1.0f / 0.0f;
-
 float custom_distance(vec2 a, vec2 b, vec2 pixel_size) {
 	vec2 difference = a - b;
 	return sqrt(pow(difference.x / pixel_size.x, 2) + pow(difference.y / pixel_size.y, 2));
@@ -22,8 +20,8 @@ void main() {
 	vec2 pixel_size = vec2(1.0f) / vec2(image_size);
 	vec2 normalized_current_position = vec2(current_position) / vec2(image_size);
 
-	float distance_to_closest_seed = infinity;
-	vec4 closest_seed = vec4(infinity, infinity, 0.0f, 0.0f);
+	float distance_to_closest_seed = 1.0f / 0.0f;
+	vec4 closest_seed = vec4(0.0f);
 
 	for (int x = -1; x <= 1; x++) {
 		for (int y = -1; y <= 1; y++) {
@@ -37,7 +35,7 @@ void main() {
 			vec4 check_pixel = imageLoad(input_image, check_position);
 
 			// The pixel to check is not a seed
-			if (isinf(check_pixel.x) || isinf(check_pixel.y)) {
+			if (check_pixel.x == 0.0f && check_pixel.y == 0.0f) {
 				continue;
 			}
 
@@ -50,5 +48,5 @@ void main() {
 		}
 	}
 
-	imageStore(output_image, current_position, closest_seed);
+	imageStore(output_image, current_position, vec4(closest_seed.x, closest_seed.y, 0.0f, 1.0f));
 }

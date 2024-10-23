@@ -16,10 +16,11 @@ void main() {
 	ivec2 current_position = ivec2(gl_GlobalInvocationID.xy);
 	vec4 current_pixel = imageLoad(input_image, current_position);
 
-	// if (isinf(current_pixel.x) && isinf(current_pixel.y)) {
-	// 	imageStore(output_image, current_position, vec4(0.0f));
-	// 	return;
-	// }
+	// The current pixel is not part of the rough outline
+	if (current_pixel.x == 0.0f && current_pixel.y == 0.0f) {
+		imageStore(output_image, current_position, vec4(0.0f));
+		return;
+	}
 
 	vec2 image_size = vec2(imageSize(input_image));
 	vec2 pixel_size = vec2(1.0f) / image_size;
@@ -27,6 +28,7 @@ void main() {
 	vec2 normalized_current_position = vec2(current_position) / image_size;
 	float distance_to_seed = custom_distance(normalized_current_position, current_pixel.xy, pixel_size);
 
+	// The current pixel is part of the objet or is outside the outline range
 	if (distance_to_seed < 1.0f || distance_to_seed > float(osb.size)) {
 		imageStore(output_image, current_position, vec4(0.0f));
 		return;

@@ -9,7 +9,7 @@ script = ExtResource("1_jdrhh")
 OutlinesCaptureViewport = NodePath("../CaptureViewport")
 OutlinesCaptureCamera = NodePath("../CaptureViewport/CaptureCamera")
 OutlinesDisplayRect = NodePath("../DisplayRect")
-OutlinesRenderScale = 0.25
+OutlinesRenderScale = 0.5
 
 [node name="CaptureViewport" type="SubViewport" parent="."]
 
