@@ -16,12 +16,12 @@ namespace Outlines
 
 		[ExportCategory("Outlines settings")]
 		[Export]
-		public int OutlinesSize { get; set; } = 6;
+		public int OutlinesSize { get; set; } = 4;
 		[Export]
-		public int GlowRadius { get; set; } = 4;
+		public int GlowRadius { get; set; } = 2;
 
 		[ExportCategory("Technical settings")]
-		[Export(PropertyHint.Range, "0.25,1.0")]
+		[Export(PropertyHint.Range, "0.5,1.0,0.05")]
 		public float OutlinesRenderScale { get; set; } = 1.0f;
 		[Export(PropertyHint.Layers3DRender)]
 		public int OutlineLayer { get; set; } = (int)Mathf.Pow(2, 19);
@@ -70,11 +70,14 @@ namespace Outlines
 			}
 
 			// Add the outlines effect to the camera
+			int scaledOutlinesSize = Mathf.CeilToInt(this.OutlinesRenderScale * this.OutlinesSize);
+			int scaledGlowRadius = this.GlowRadius == 0 ? 0 : Mathf.CeilToInt(this.OutlinesRenderScale * this.GlowRadius);
+
 			this.OutlinesCaptureCamera.Compositor = new()
 			{
 				CompositorEffects = new()
 				{
-					new CompositorEffectOutlines(this.OutlinesSize, this.GlowRadius)
+					new CompositorEffectOutlines(scaledOutlinesSize, scaledGlowRadius)
 				}
 			};
 

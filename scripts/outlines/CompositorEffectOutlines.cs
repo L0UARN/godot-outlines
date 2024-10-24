@@ -7,7 +7,7 @@ namespace Outlines
 	[GlobalClass]
 	public partial class CompositorEffectOutlines : CompositorEffect
 	{
-		private int _OutlinesSize = 6;
+		private int _OutlinesSize = 4;
 		[Export]
 		public int OutlinesSize
 		{
@@ -30,7 +30,7 @@ namespace Outlines
 			}
 		}
 
-		private int _GlowRadius = 4;
+		private int _GlowRadius = 2;
 		[Export(PropertyHint.Range, "0,32,1")]
 		public int GlowRadius
 		{
