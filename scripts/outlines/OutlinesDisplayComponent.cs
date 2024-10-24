@@ -1,3 +1,4 @@
+using System;
 using Godot;
 
 namespace Outlines
@@ -13,8 +14,8 @@ namespace Outlines
 		public TextureRect OutlinesDisplayRect { get; set; } = null;
 		[Export(PropertyHint.Range, "0.25,1.0")]
 		public float OutlinesRenderScale { get; set; } = 1.0f;
-		[Export(PropertyHint.Range, "1,20,1")]
-		public int OutlineLayer { get; set; } = 20;
+		[Export(PropertyHint.Layers3DRender)]
+		public int OutlineLayer { get; set; } = (int)Mathf.Pow(2, 19);
 
 		private void SetupCaptureViewport()
 		{
@@ -49,7 +50,7 @@ namespace Outlines
 		{
 			for (int i = 1; i < 21; i++)
 			{
-				if (i == this.OutlineLayer)
+				if (i == Math.Log2(this.OutlineLayer) + 1)
 				{
 					this.OutlinesCaptureCamera.SetCullMaskValue(i, true);
 				}

@@ -1,5 +1,6 @@
-[gd_scene load_steps=13 format=3 uid="uid://b2bgu3j7lj8xq"]
+[gd_scene load_steps=14 format=3 uid="uid://b2bgu3j7lj8xq"]
 
+[ext_resource type="Script" path="res://scripts/outlines/OutlinerComponent.cs" id="1_4y7fx"]
 [ext_resource type="PackedScene" uid="uid://4q2l35yt3uyr" path="res://outlines_layer.tscn" id="2_udepg"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7d8ek"]
@@ -104,7 +105,6 @@ mesh = SubResource("SphereMesh_k34qs")
 
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="Node3D"]
 transform = Transform3D(0.816984, 0, 0.576661, 0, 1, 0, -0.576661, 0, 0.816984, 0.842525, 0.6361, 0)
-layers = 524289
 mesh = SubResource("BoxMesh_ktjv2")
 skeleton = NodePath("../..")
 
@@ -112,6 +112,10 @@ skeleton = NodePath("../..")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.39213, 0, 0)
 mesh = SubResource("PrismMesh_xo604")
 skeleton = NodePath("../..")
+
+[node name="OutlinerComponent" type="Node" parent="Node3D" node_paths=PackedStringArray("NodesToOutline")]
+script = ExtResource("1_4y7fx")
+NodesToOutline = NodePath("..")
 
 [node name="Pivot" type="Node3D" parent="."]
 

@@ -7,12 +7,6 @@ namespace Outlines
 	[GlobalClass]
 	public partial class CompositorEffectOutlines : CompositorEffect
 	{
-		private void SetupStepsNeeded()
-		{
-			this._StepsNeeded = Mathf.CeilToInt(Math.Log2(this._OutlinesSize));
-		}
-
-		private int _StepsNeeded = -1;
 		private int _OutlinesSize = 6;
 		[Export]
 		public int OutlinesSize
@@ -32,7 +26,7 @@ namespace Outlines
 				}
 
 				this._OutlinesSize = value;
-				this.SetupStepsNeeded();
+				// TODO: rebuild the pipeline accounting for the new outlines size
 			}
 		}
 
@@ -55,6 +49,7 @@ namespace Outlines
 				}
 
 				this._GlowRadius = value;
+				// TODO: rebuild the pipeline accounting for the new glow radius
 			}
 		}
 
@@ -74,7 +69,8 @@ namespace Outlines
 			PpcsShader jfaInit = new(this._Rd, "res://shaders/jfa_init.glsl");
 			this._Pipeline.Steps.Add(jfaInit);
 
-			for (int i = this._StepsNeeded - 1; i >= 0; i--)
+			int stepsNeeded = Mathf.CeilToInt(Math.Log2(this._OutlinesSize));
+			for (int i = stepsNeeded - 1; i >= 0; i--)
 			{
 				PpcsShader jfaStep = new(this._Rd, "res://shaders/jfa_step.glsl");
 				PpcsBuffer stepSizeBuffer = new(this._Rd, BitConverter.GetBytes((int)Mathf.Pow(2, i)));
@@ -114,8 +110,6 @@ namespace Outlines
 		public CompositorEffectOutlines() : base()
 		{
 			this.EffectCallbackType = EffectCallbackTypeEnum.PostTransparent;
-			this.SetupStepsNeeded();
-
 			RenderingServer.CallOnRenderThread(Callable.From(this.SetupEffect));
 		}
 

@@ -1,3 +1,4 @@
+using System;
 using Godot;
 
 namespace Outlines
@@ -5,8 +6,8 @@ namespace Outlines
 	[GlobalClass]
 	public partial class OutlinerComponent : Node
 	{
-		[Export(PropertyHint.Range, "1,20,1")]
-		public int OutlineLayer { get; set; } = 20;
+		[Export(PropertyHint.Layers3DRender)]
+		public int OutlineLayer { get; set; } = (int)Mathf.Pow(2, 19);
 
 		private string _OutlinerGroupName = "";
 
@@ -15,9 +16,10 @@ namespace Outlines
 			node.ChildEnteredTree += this.RegisterNode;
 			node.ChildExitingTree += this.UnregisterNode;
 
-			if (node is VisualInstance3D meshInstance)
+			if (node is VisualInstance3D visualInstance)
 			{
-				meshInstance.AddToGroup(this._OutlinerGroupName);
+				visualInstance.AddToGroup(this._OutlinerGroupName);
+				this.EnableOutlinesForNode(visualInstance, this._Enabled);
 			}
 
 			foreach (Node child in node.GetChildren())
@@ -34,6 +36,7 @@ namespace Outlines
 			if (node.IsInGroup(this._OutlinerGroupName))
 			{
 				node.RemoveFromGroup(this._OutlinerGroupName);
+				this.EnableOutlinesForNode(node, false);
 			}
 
 			foreach (Node child in node.GetChildren())
@@ -49,7 +52,7 @@ namespace Outlines
 			get => this._NodesToOutline;
 			set
 			{
-				if (Engine.IsEditorHint())
+				if (Engine.IsEditorHint() || !this.IsNodeReady())
 				{
 					this._NodesToOutline = value;
 					return;
@@ -81,6 +84,23 @@ namespace Outlines
 			}
 		}
 
+		private void EnableOutlinesForNode(Node node, bool enable)
+		{
+			int outlineLayer = (int)Math.Log2(this.OutlineLayer) + 1;
+
+			if (node is VisualInstance3D visualInstance)
+			{
+				if (enable)
+				{
+					visualInstance.SetLayerMaskValue(outlineLayer, true);
+				}
+				else
+				{
+					visualInstance.SetLayerMaskValue(outlineLayer, false);
+				}
+			}
+		}
+
 		private bool _Enabled = false;
 		public bool Enabled
 		{
@@ -94,17 +114,7 @@ namespace Outlines
 
 				foreach (Node node in GetTree().GetNodesInGroup(this._OutlinerGroupName))
 				{
-					if (node is VisualInstance3D visualInstance)
-					{
-						if (value)
-						{
-							visualInstance.SetLayerMaskValue(this.OutlineLayer, true);
-						}
-						else
-						{
-							visualInstance.SetLayerMaskValue(this.OutlineLayer, false);
-						}
-					}
+					this.EnableOutlinesForNode(node, value);
 				}
 
 				this._Enabled = value;
