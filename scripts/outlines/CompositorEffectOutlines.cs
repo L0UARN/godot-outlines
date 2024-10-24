@@ -113,6 +113,14 @@ namespace Outlines
 			RenderingServer.CallOnRenderThread(Callable.From(this.SetupEffect));
 		}
 
+		public CompositorEffectOutlines(int outlinesSize, int glowRadius) : base()
+		{
+			this.EffectCallbackType = EffectCallbackTypeEnum.PostTransparent;
+			this._OutlinesSize = outlinesSize;
+			this._GlowRadius = glowRadius;
+			RenderingServer.CallOnRenderThread(Callable.From(this.SetupEffect));
+		}
+
 		public override void _RenderCallback(int effectCallbackType, RenderData renderData)
 		{
 			base._RenderCallback(effectCallbackType, renderData);

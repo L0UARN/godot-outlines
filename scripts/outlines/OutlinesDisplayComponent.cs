@@ -6,12 +6,21 @@ namespace Outlines
 	[GlobalClass]
 	public partial class OutlinesDisplayComponent : Node
 	{
+		[ExportCategory("Required nodes")]
 		[Export]
 		public SubViewport OutlinesCaptureViewport { get; set; } = null;
 		[Export]
 		public Camera3D OutlinesCaptureCamera { get; set; } = null;
 		[Export]
 		public TextureRect OutlinesDisplayRect { get; set; } = null;
+
+		[ExportCategory("Outlines settings")]
+		[Export]
+		public int OutlinesSize { get; set; } = 6;
+		[Export]
+		public int GlowRadius { get; set; } = 4;
+
+		[ExportCategory("Technical settings")]
 		[Export(PropertyHint.Range, "0.25,1.0")]
 		public float OutlinesRenderScale { get; set; } = 1.0f;
 		[Export(PropertyHint.Layers3DRender)]
@@ -65,7 +74,7 @@ namespace Outlines
 			{
 				CompositorEffects = new()
 				{
-					new CompositorEffectOutlines()
+					new CompositorEffectOutlines(this.OutlinesSize, this.GlowRadius)
 				}
 			};
 
