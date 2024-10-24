@@ -51,6 +51,13 @@ namespace Outlines
 				scaledSize.Y % 8 == 0 ? scaledSize.Y : scaledSize.Y + (8 - scaledSize.Y % 8)
 			);
 
+			// Disable any performance-impacting feature that would be useless anyway
+			this.OutlinesCaptureViewport.Msaa2D = Viewport.Msaa.Disabled;
+			this.OutlinesCaptureViewport.Msaa3D = Viewport.Msaa.Disabled;
+			this.OutlinesCaptureViewport.ScreenSpaceAA = Viewport.ScreenSpaceAAEnum.Disabled;
+			this.OutlinesCaptureViewport.PositionalShadowAtlasSize = 0;
+			this.OutlinesCaptureViewport.FsrSharpness = 0.0f;
+
 			// Very important so the outlines layer is to be applied on top of the existing layer and does not obscure it
 			this.OutlinesCaptureViewport.TransparentBg = true;
 		}
