@@ -27,12 +27,34 @@ void main() {
 
 	vec2 normalized_current_position = vec2(current_position) / image_size;
 	float distance_to_seed = custom_distance(normalized_current_position, current_pixel.xy, pixel_size);
+	float outlinesSize = float(osb.size);
 
-	// The current pixel is part of the objet or is outside the outline range
-	if (distance_to_seed < 1.0f || distance_to_seed > float(osb.size)) {
+	// The current pixel is outside the outline range
+	if (distance_to_seed > outlinesSize) {
 		imageStore(output_image, current_position, vec4(0.0f));
 		return;
 	}
 
+	// The current pixel is on the edge of the outline, outer side
+	if (distance_to_seed > outlinesSize - 1.0f) {
+		float smoothing = 1.0f - (distance_to_seed - (outlinesSize - 1.0f));
+		imageStore(output_image, current_position, vec4(vec3(1.0f), smoothing));
+		return;
+	}
+
+	// The current pixel is part of the object to outline
+	if (distance_to_seed < 0.1f) {
+		imageStore(output_image, current_position, vec4(0.0f));
+		return;
+	}
+
+	// The current pixel is on the edge of the outline, inner side
+	if (distance_to_seed < 1.0f) {
+		float smoothing = distance_to_seed;
+		imageStore(output_image, current_position, vec4(vec3(1.0f), smoothing));
+		return;
+	}
+
+	// The current pixel is part of the outline
 	imageStore(output_image, current_position, vec4(1.0f));
 }

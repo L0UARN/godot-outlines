@@ -13,12 +13,6 @@ void main() {
 	ivec2 current_position = ivec2(gl_GlobalInvocationID.xy);
 	vec4 current_pixel = imageLoad(input_image, current_position);
 
-	// The current pixel is part of the glowing shape
-	if (current_pixel.a == 1.0f) {
-		imageStore(output_image, current_position, current_pixel);
-		return;
-	}
-
 	vec4 color_sum = vec4(0.0f);
 	float checked_pixels = 0.0f;
 
@@ -38,6 +32,6 @@ void main() {
 		checked_pixels += 1.0f;
 	}
 
-	vec4 final_color = color_sum / checked_pixels;
-	imageStore(output_image, current_position, final_color);
+	vec4 blurred_color = color_sum / checked_pixels;
+	imageStore(output_image, current_position, blurred_color + current_pixel);
 }
