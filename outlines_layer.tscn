@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://4q2l35yt3uyr"]
+[gd_scene load_steps=3 format=3 uid="uid://4q2l35yt3uyr"]
 
 [ext_resource type="Script" path="res://scripts/outlines/OutlinesDisplayComponent.cs" id="1_jdrhh"]
+[ext_resource type="Script" path="res://scripts/ppcs/structs/GraphTestNode.cs" id="2_hdcc4"]
 
 [node name="OutlinesLayer" type="CanvasLayer"]
 
@@ -18,3 +19,6 @@ GlowRadius = 0
 [node name="DisplayRect" type="TextureRect" parent="."]
 offset_right = 40.0
 offset_bottom = 40.0
+
+[node name="GraphTestNode" type="Node" parent="."]
+script = ExtResource("2_hdcc4")

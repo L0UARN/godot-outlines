@@ -67,52 +67,42 @@ namespace Outlines.Ppcs.Structs
 			}
 		}
 
-		private void BuildPipeline()
+		// TODO: remove this once done debugging
+		private void PrintGraph()
+		{
+			GD.Print("PpcsGraph:");
+			foreach (KeyValuePair<PpcsShader, HashSet<PpcsShader>> entry in this._Graph)
+			{
+				GD.Print("-> ", entry.Key, ":");
+				foreach (PpcsShader value in entry.Value)
+				{
+					GD.Print("---> ", value);
+				}
+			}
+		}
+
+		public void BuildPipeline()
 		{
 			this._Pipeline.Clear();
 
-			Dictionary<PpcsShader, int> allowedAppearences = new();
-			Dictionary<PpcsShader, int> currentAppearences = new();
-
-			foreach (KeyValuePair<PpcsShader, HashSet<PpcsShader>> entry in this._Graph)
+			if (this._FinalNode == null)
 			{
-				foreach (PpcsShader node in entry.Value)
-				{
-					if (!allowedAppearences.ContainsKey(node))
-					{
-						currentAppearences[node] = 0;
-						allowedAppearences[node] = 1;
-						continue;
-					}
-
-					allowedAppearences[node]++;
-				}
+				throw new Exception("A PpcsGraph's FinalNode cannot be null");
 			}
+			
+			Stack<PpcsShader> nodesToExplore = new();
+			nodesToExplore.Push(FinalNode);
 
-			Stack<PpcsShader> toVisit = new();
-			toVisit.Push(this._FinalNode);
-
-			while (toVisit.Count > 0)
+			while (nodesToExplore.Count > 0)
 			{
-				PpcsShader currentNode = toVisit.Pop();
-
-				// Detect cycles in the graph
-				currentAppearences[currentNode]++;
-				if (currentAppearences[currentNode] > allowedAppearences[currentNode])
-				{
-					throw new Exception("Cycle detected in PpcsGraph");
-				}
-				
-				// Put the current node at the end of the pipeline
-				this._Pipeline.Remove(currentNode);
+				PpcsShader currentNode = nodesToExplore.Pop();
 				this._Pipeline.Add(currentNode);
 
-				// Plan to visit all nodes that lead to the current node
 				foreach (KeyValuePair<PpcsShader, HashSet<PpcsShader>> entry in this._Graph)
 				{
 					if (entry.Value.Contains(currentNode))
 					{
-						toVisit.Push(entry.Key);
+						nodesToExplore.Push(entry.Key);
 					}
 				}
 			}
@@ -123,6 +113,11 @@ namespace Outlines.Ppcs.Structs
 		private void CreateBufferPool()
 		{
 			// TODO: based on the pipeline and the graph, create the appropriate amount of buffers (idealy the minimal amount of buffers)
+		}
+
+		public PpcsGraph(RenderingDevice renderingDevice)
+		{
+			this._Rd = renderingDevice;
 		}
 	}
 };
