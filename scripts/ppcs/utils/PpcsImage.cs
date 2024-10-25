@@ -1,6 +1,6 @@
 using Godot;
 
-namespace Outlines.Ppcs
+namespace Outlines.Ppcs.Utils
 {
 	public class PpcsImage
 	{

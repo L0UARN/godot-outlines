@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using Godot;
+using Outlines.Ppcs.Utils;
 
-namespace Outlines.Ppcs
+namespace Outlines.Ppcs.Structs
 {
 	public class PpcsPipeline
 	{

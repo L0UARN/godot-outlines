@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Godot;
 
-namespace Outlines.Ppcs
+namespace Outlines.Ppcs.Utils
 {
 	public static class PpcsShaderPool
 	{

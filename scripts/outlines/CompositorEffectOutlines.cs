@@ -1,6 +1,8 @@
 using System;
 using Godot;
 using Outlines.Ppcs;
+using Outlines.Ppcs.Structs;
+using Outlines.Ppcs.Utils;
 
 namespace Outlines
 {

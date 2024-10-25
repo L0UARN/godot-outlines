@@ -1,7 +1,7 @@
 using Godot;
 using Godot.Collections;
 
-namespace Outlines.Ppcs
+namespace Outlines.Ppcs.Utils
 {
 	public class PpcsUniformBuffer : PpcsUniform
 	{
