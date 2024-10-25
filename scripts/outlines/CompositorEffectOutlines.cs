@@ -85,26 +85,26 @@ namespace Outlines
 			jfaOutlines.Uniforms.Add(outlinesSizeBufferUniform);
 			this._Pipeline.Steps.Add(jfaOutlines);
 
-			if (this._GlowRadius > 0)
-			{
-				PpcsShader glowPass1 = new(this._Rd, "res://shaders/glow.glsl");
-				PpcsBuffer glowPass1SizeBuffer = new(this._Rd, BitConverter.GetBytes(this._GlowRadius));
-				PpcsUniformBuffer glowPass1SizeBufferUniform = new(this._Rd, glowPass1, 2, glowPass1SizeBuffer);
-				glowPass1.Uniforms.Add(glowPass1SizeBufferUniform);
-				PpcsBuffer glowPass1DirectionBuffer = new(this._Rd, BitConverter.GetBytes(false));
-				PpcsUniformBuffer glowPass1DirectionBufferUniform = new(this._Rd, glowPass1, 3, glowPass1DirectionBuffer);
-				glowPass1.Uniforms.Add(glowPass1DirectionBufferUniform);
-				this._Pipeline.Steps.Add(glowPass1);
+			// if (this._GlowRadius > 0)
+			// {
+			// 	PpcsShader glowPass1 = new(this._Rd, "res://shaders/glow.glsl");
+			// 	PpcsBuffer glowPass1SizeBuffer = new(this._Rd, BitConverter.GetBytes(this._GlowRadius));
+			// 	PpcsUniformBuffer glowPass1SizeBufferUniform = new(this._Rd, glowPass1, 2, glowPass1SizeBuffer);
+			// 	glowPass1.Uniforms.Add(glowPass1SizeBufferUniform);
+			// 	PpcsBuffer glowPass1DirectionBuffer = new(this._Rd, BitConverter.GetBytes(false));
+			// 	PpcsUniformBuffer glowPass1DirectionBufferUniform = new(this._Rd, glowPass1, 3, glowPass1DirectionBuffer);
+			// 	glowPass1.Uniforms.Add(glowPass1DirectionBufferUniform);
+			// 	this._Pipeline.Steps.Add(glowPass1);
 
-				PpcsShader glowPass2 = new(this._Rd, "res://shaders/glow.glsl");
-				PpcsBuffer glowPass2SizeBuffer = new(this._Rd, BitConverter.GetBytes(this._GlowRadius));
-				PpcsUniformBuffer glowPass2SizeBufferUniform = new(this._Rd, glowPass2, 2, glowPass2SizeBuffer);
-				glowPass2.Uniforms.Add(glowPass2SizeBufferUniform);
-				PpcsBuffer glowPass2DirectionBuffer = new(this._Rd, BitConverter.GetBytes(true));
-				PpcsUniformBuffer glowPass2DirectionBufferUniform = new(this._Rd, glowPass2, 3, glowPass2DirectionBuffer);
-				glowPass2.Uniforms.Add(glowPass2DirectionBufferUniform);
-				this._Pipeline.Steps.Add(glowPass2);
-			}
+			// 	PpcsShader glowPass2 = new(this._Rd, "res://shaders/glow.glsl");
+			// 	PpcsBuffer glowPass2SizeBuffer = new(this._Rd, BitConverter.GetBytes(this._GlowRadius));
+			// 	PpcsUniformBuffer glowPass2SizeBufferUniform = new(this._Rd, glowPass2, 2, glowPass2SizeBuffer);
+			// 	glowPass2.Uniforms.Add(glowPass2SizeBufferUniform);
+			// 	PpcsBuffer glowPass2DirectionBuffer = new(this._Rd, BitConverter.GetBytes(true));
+			// 	PpcsUniformBuffer glowPass2DirectionBufferUniform = new(this._Rd, glowPass2, 3, glowPass2DirectionBuffer);
+			// 	glowPass2.Uniforms.Add(glowPass2DirectionBufferUniform);
+			// 	this._Pipeline.Steps.Add(glowPass2);
+			// }
 		}
 
 		public CompositorEffectOutlines() : base()
