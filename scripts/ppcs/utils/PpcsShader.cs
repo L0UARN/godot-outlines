@@ -118,11 +118,5 @@ namespace Outlines.Ppcs.Utils
 
 			PpcsShaderPool.CleanupShader(this._Rd, this._ShaderPath);
 		}
-
-		// TODO: remove this once done debugging
-		public override string ToString()
-		{
-			return this._ShaderPath.Split("/").Last();
-		}
 	}
 }

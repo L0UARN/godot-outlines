@@ -29,9 +29,11 @@ namespace Outlines.Ppcs.Structs
 			this._Graph.AddArc(boxBlur1, boxBlur2);
 			this._Graph.AddArc(boxBlur2, composite);
 			this._Graph.AddArc(jfaOutlines, composite);
-			this._Graph.FinalNode = composite;
 
-			this._Graph.BuildPipeline();
+			this._Graph.FindStartsAndEnd();
+			this._Graph.CheckForCycles();
+			this._Graph.CheckForIsolatedNodes();
+			this._Graph.CreateBufferPool();
 		}
 	}
 }

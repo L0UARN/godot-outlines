@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using Outlines.Ppcs.Utils;
 
@@ -9,23 +10,9 @@ namespace Outlines.Ppcs.Structs
 	{
 		private RenderingDevice _Rd = null;
 		private Dictionary<PpcsShader, HashSet<PpcsShader>> _Graph = new();
-		private List<PpcsShader> _Pipeline = new();
+		private List<PpcsShader> _StartingNodes = new();
+		private PpcsShader _EndingNode = null;
 		private List<PpcsImage> _BufferPool = new();
-		
-		private PpcsShader _FinalNode = null;
-		public PpcsShader FinalNode
-		{
-			get => _FinalNode;
-			set
-			{
-				if (value == this._FinalNode)
-				{
-					return;
-				}
-
-				this._FinalNode = value;
-			}
-		}
 
 		public void AddArc(PpcsShader fromNode, PpcsShader toNode)
 		{
@@ -67,52 +54,154 @@ namespace Outlines.Ppcs.Structs
 			}
 		}
 
-		// TODO: remove this once done debugging
-		private void PrintGraph()
+		public void FindStartsAndEnd()
 		{
-			GD.Print("PpcsGraph:");
+			this._StartingNodes.AddRange(this._Graph.Keys);
+			this._EndingNode = null;
+
 			foreach (KeyValuePair<PpcsShader, HashSet<PpcsShader>> entry in this._Graph)
 			{
-				GD.Print("-> ", entry.Key, ":");
-				foreach (PpcsShader value in entry.Value)
+				// Iterate through the successors of entry.Key
+				foreach (PpcsShader node in entry.Value)
 				{
-					GD.Print("---> ", value);
-				}
-			}
-		}
+					// If a node is a successor of another, then it can't be a starting node
+					this._StartingNodes.Remove(node);
 
-		public void BuildPipeline()
-		{
-			this._Pipeline.Clear();
-
-			if (this._FinalNode == null)
-			{
-				throw new Exception("A PpcsGraph's FinalNode cannot be null");
-			}
-			
-			Stack<PpcsShader> nodesToExplore = new();
-			nodesToExplore.Push(FinalNode);
-
-			while (nodesToExplore.Count > 0)
-			{
-				PpcsShader currentNode = nodesToExplore.Pop();
-				this._Pipeline.Add(currentNode);
-
-				foreach (KeyValuePair<PpcsShader, HashSet<PpcsShader>> entry in this._Graph)
-				{
-					if (entry.Value.Contains(currentNode))
+					// If a node is a successor of another, and isn't the predecessor of any, then it's the ending node
+					if (!this._Graph.ContainsKey(node))
 					{
-						nodesToExplore.Push(entry.Key);
+						// There can't be multiple ending nodes for the graph (the goal is to output one image)
+						if (this._EndingNode != node && this._EndingNode != null)
+						{
+							throw new Exception("PpcsGraph has multiple ending nodes (must have exactly one).");
+						}
+
+						this._EndingNode = node;
 					}
 				}
 			}
 
-			this._Pipeline.Reverse();
+			if (this._StartingNodes.Count == 0)
+			{
+				throw new Exception("PpcsGraph has no starting nodes (must have at least one).");
+			}
+
+			if (this._EndingNode == null)
+			{
+				throw new Exception("PpcsGraph has no ending node (must have exactly one).");
+			}
 		}
 
-		private void CreateBufferPool()
+		public void CheckForCycles()
 		{
-			// TODO: based on the pipeline and the graph, create the appropriate amount of buffers (idealy the minimal amount of buffers)
+			foreach (PpcsShader startingNode in this._StartingNodes)
+			{
+				Stack<PpcsShader> toVisit = new();
+				toVisit.Push(startingNode);
+				HashSet<PpcsShader> visited = new();
+
+				while (toVisit.Count > 0)
+				{
+					PpcsShader currentlyVisiting = toVisit.Pop();
+					visited.Add(currentlyVisiting);
+
+					if (!this._Graph.ContainsKey(currentlyVisiting))
+					{
+						continue;
+					}
+
+					foreach (PpcsShader successor in this._Graph[currentlyVisiting])
+					{
+						if (toVisit.Contains(successor))
+						{
+							throw new Exception("PpcsGraph contains a cycle (each shader can only be ran once).");
+						}
+
+						toVisit.Push(successor);
+					}
+				}
+			}
+		}
+
+		public void CheckForIsolatedNodes()
+		{
+			// 1. Gather all the nodes present in the graph
+			// 2. Build a reversed version of the graph
+
+			HashSet<PpcsShader> allNodes = new();
+			Dictionary<PpcsShader, HashSet<PpcsShader>> reverseGraph = new();
+
+			foreach (KeyValuePair<PpcsShader, HashSet<PpcsShader>> entry in this._Graph)
+			{
+				allNodes.Add(entry.Key);
+
+				foreach (PpcsShader node in entry.Value)
+				{
+					allNodes.Add(node);
+
+					if (!reverseGraph.ContainsKey(node))
+					{
+						reverseGraph[node] = new();
+					}
+
+					reverseGraph[node].Add(entry.Key);
+				}
+			}
+
+			// 2. Go through the graph in reverse to find all accessible nodes
+
+			Stack<PpcsShader> toVisit = new();
+			toVisit.Push(this._EndingNode);
+			HashSet<PpcsShader> visited = new();
+
+			while (toVisit.Count > 0)
+			{
+				PpcsShader currentlyVisiting = toVisit.Pop();
+				visited.Add(currentlyVisiting);
+
+				if (!reverseGraph.ContainsKey(currentlyVisiting))
+				{
+					continue;
+				}
+
+				foreach (PpcsShader predecessor in reverseGraph[currentlyVisiting])
+				{
+					toVisit.Push(predecessor);
+				}
+			}
+
+			// 3. Compare the two sets to see if all nodes are accessible
+
+			if (!visited.SetEquals(allNodes))
+			{
+				throw new Exception("PpcsGraph has isolated nodes (must have none).");
+			}
+		}
+
+		public void CreateBufferPool()
+		{
+			Dictionary<PpcsShader, int> predecessorCount = new();
+
+			foreach (KeyValuePair<PpcsShader, HashSet<PpcsShader>> entry in this._Graph)
+			{
+				foreach (PpcsShader node in entry.Value)
+				{
+					if (!predecessorCount.ContainsKey(node))
+					{
+						predecessorCount[node] = 1;
+						continue;
+					}
+
+					predecessorCount[node]++;
+				}
+			}
+
+			int bufferPoolSize = predecessorCount.Values.Max() + 1;
+
+			for (int i = 0; i < bufferPoolSize; i++)
+			{
+				this._BufferPool.Add(null);
+			}
 		}
 
 		public PpcsGraph(RenderingDevice renderingDevice)
