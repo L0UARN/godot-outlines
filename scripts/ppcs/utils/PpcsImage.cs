@@ -1,8 +1,9 @@
 using Godot;
+using Godot.Collections;
 
 namespace Outlines.Ppcs.Utils
 {
-	public class PpcsImage
+	public class PpcsImage : IPpcsUniformable
 	{
 		private RenderingDevice _Rd = null;
 
@@ -10,7 +11,7 @@ namespace Outlines.Ppcs.Utils
 		public Vector2I Size
 		{
 			get => this._Size;
-			set
+			private set
 			{
 				if (value.Equals(this._Size))
 				{
@@ -36,7 +37,7 @@ namespace Outlines.Ppcs.Utils
 		public Rid Rid
 		{
 			get => this._Rid;
-			set
+			private set
 			{
 				if (value.Equals(this._Rid))
 				{
@@ -61,6 +62,18 @@ namespace Outlines.Ppcs.Utils
 		{
 			this._Rd = renderingDevice;
 			this.Rid = rid;
+		}
+
+		public Rid CreateUniform(PpcsShader shader, int slot)
+		{
+			RDUniform uniform = new()
+			{
+				UniformType = RenderingDevice.UniformType.Image,
+				Binding = 0,
+			};
+			uniform.AddId(this._Rid);
+
+			return this._Rd.UniformSetCreate(new Array<RDUniform> { uniform }, shader.Rid, (uint)slot);
 		}
 
 		public void Cleanup()

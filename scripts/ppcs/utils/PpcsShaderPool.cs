@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Godot;
 
@@ -5,14 +6,14 @@ namespace Outlines.Ppcs.Utils
 {
 	public static class PpcsShaderPool
 	{
-		private static Dictionary<string, Rid> _Rids = new();
-		private static Dictionary<string, int> _References = new();
+		private static Dictionary<StringName, Rid> _ShaderRids = new();
+		private static Dictionary<StringName, int> _ShaderReferenceCounts = new();
 
-		public static Rid GetShaderRid(RenderingDevice renderingDevice, string shaderPath)
+		public static Rid GetOrCreateShaderRid(RenderingDevice renderingDevice, StringName shaderPath)
 		{
-			if (PpcsShaderPool._Rids.ContainsKey(shaderPath) && PpcsShaderPool._Rids[shaderPath].IsValid)
+			if (PpcsShaderPool._ShaderRids.ContainsKey(shaderPath))
 			{
-				return PpcsShaderPool._Rids[shaderPath];
+				return PpcsShaderPool._ShaderRids[shaderPath];
 			}
 
 			RDShaderFile shaderFile = GD.Load<RDShaderFile>(shaderPath);
@@ -20,46 +21,56 @@ namespace Outlines.Ppcs.Utils
 
 			if (shaderSpirV.CompileErrorCompute.Length > 0)
 			{
-				GD.PrintErr(shaderSpirV.CompileErrorCompute);
-				return new();
+				throw new Exception(shaderSpirV.CompileErrorCompute);
 			}
 
 			Rid shaderRid = renderingDevice.ShaderCreateFromSpirV(shaderSpirV);
-			PpcsShaderPool._Rids[shaderPath] = shaderRid;
+			PpcsShaderPool._ShaderRids[shaderPath] = shaderRid;
 			return shaderRid;
 		}
 
-		public static void AddShaderReference(string shaderPath)
+		public static void HoldShader(StringName shaderPath)
 		{
-			if (PpcsShaderPool._References.ContainsKey(shaderPath))
+			if (!PpcsShaderPool._ShaderRids.ContainsKey(shaderPath))
 			{
-				PpcsShaderPool._References[shaderPath]++;
 				return;
 			}
 
-			PpcsShaderPool._References[shaderPath] = 1;
+			if (!PpcsShaderPool._ShaderReferenceCounts.ContainsKey(shaderPath))
+			{
+				PpcsShaderPool._ShaderReferenceCounts[shaderPath] = 1;
+				return;
+			}
+
+			PpcsShaderPool._ShaderReferenceCounts[shaderPath]++;
 		}
 
-		public static void CleanupShader(RenderingDevice renderingDevice, string shaderPath)
+		public static void ReleaseShader(RenderingDevice renderingDevice, StringName shaderPath)
 		{
-			if (!PpcsShaderPool._Rids.ContainsKey(shaderPath))
+			if (!PpcsShaderPool._ShaderRids.ContainsKey(shaderPath))
 			{
 				return;
 			}
 
-			if (PpcsShaderPool._References.ContainsKey(shaderPath) && PpcsShaderPool._References[shaderPath] > 1)
+			if (!PpcsShaderPool._ShaderReferenceCounts.ContainsKey(shaderPath))
 			{
-				PpcsShaderPool._References[shaderPath]--;
 				return;
 			}
 
-			if (PpcsShaderPool._Rids[shaderPath].IsValid)
+			PpcsShaderPool._ShaderReferenceCounts[shaderPath]--;
+
+			if (PpcsShaderPool._ShaderReferenceCounts[shaderPath] > 0)
 			{
-				renderingDevice.FreeRid(PpcsShaderPool._Rids[shaderPath]);
+				return;
 			}
 
-			PpcsShaderPool._Rids.Remove(shaderPath);
-			PpcsShaderPool._References.Remove(shaderPath);
+			if (PpcsShaderPool._ShaderRids[shaderPath].IsValid)
+			{
+				renderingDevice.FreeRid(PpcsShaderPool._ShaderRids[shaderPath]);
+			}
+
+			PpcsShaderPool._ShaderReferenceCounts.Remove(shaderPath);
+			PpcsShaderPool._ShaderRids.Remove(shaderPath);
 		}
 	}
 }

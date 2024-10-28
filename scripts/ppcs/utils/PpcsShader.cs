@@ -1,114 +1,72 @@
 using System.Collections.Generic;
-using System.Linq;
 using Godot;
 
 namespace Outlines.Ppcs.Utils
 {
 	public class PpcsShader
 	{
-		protected RenderingDevice _Rd = null;
+		private RenderingDevice _Rd = null;
 
-		protected string _ShaderPath = null;
-		protected Rid _PipelineRid = new();
+		public Rid Rid { get; private set; } = new();
+		private Rid _PipelineRid = new();
 
-		public Rid Rid
+		private StringName _ShaderPath = null;
+		public StringName ShaderPath
 		{
-			get => PpcsShaderPool.GetShaderRid(this._Rd, this._ShaderPath);
-		}
-
-		protected PpcsUniformImage _InputImageUniform = null;
-		protected PpcsImage _InputImage = null;
-		public PpcsImage InputImage
-		{
-			get => this._InputImage;
-			set
+			get => this._ShaderPath;
+			private set
 			{
-				if (value.Rid.Equals(this._InputImage?.Rid))
+				if (this._ShaderPath.Equals(value))
 				{
 					return;
 				}
 
-				if (this._InputImageUniform == null)
-				{
-					this._InputImageUniform = new(this._Rd, this, 0, value);
-				}
-				else
-				{
-					this._InputImageUniform.Image = value;
-				}
-
-				this._InputImage = new(this._Rd, value.Rid);
+				this.Rid = PpcsShaderPool.GetOrCreateShaderRid(this._Rd, value);
+				PpcsShaderPool.HoldShader(value);
+				this._ShaderPath = value;
 			}
 		}
 
-		protected PpcsUniformImage _OutputImageUniform = null;
-		protected PpcsImage _OutputImage = null;
-		public PpcsImage OutputImage
-		{
-			get => _OutputImage;
-			set
-			{
-				if (value.Rid.Equals(this._OutputImage?.Rid))
-				{
-					return;
-				}
-
-				if (this._OutputImageUniform == null)
-				{
-					this._OutputImageUniform = new(this._Rd, this, 0, value);
-				}
-				else
-				{
-					this._OutputImageUniform.Image = value;
-				}
-
-				this._OutputImage = new(this._Rd, value.Rid);
-			}
-		}
-
-		public List<PpcsUniform> Uniforms { get; protected set; } = new();
-
-		public PpcsShader(RenderingDevice renderingDevice, string shaderPath)
+		public PpcsShader(RenderingDevice renderingDevice, StringName shaderPath)
 		{
 			this._Rd = renderingDevice;
-			this._ShaderPath = shaderPath;
+			this.ShaderPath = shaderPath;
+		}
 
-			Rid shaderRid = PpcsShaderPool.GetShaderRid(this._Rd, this._ShaderPath);
-			PpcsShaderPool.AddShaderReference(this._ShaderPath);
-			this._PipelineRid = this._Rd.ComputePipelineCreate(shaderRid);
+		private Dictionary<int, Rid> _Uniforms = new();
+
+		public void BindUniform(IPpcsUniformable uniformable, int slot)
+		{
+			if (this._Uniforms.ContainsKey(slot))
+			{
+				Rid toCleanup = this._Uniforms[slot];
+
+				if (toCleanup.IsValid && this._Rd.UniformSetIsValid(toCleanup))
+				{
+					this._Rd.FreeRid(toCleanup);
+				}
+			}
+
+			Rid uniformRid = uniformable.CreateUniform(this, slot);
+			this._Uniforms[slot] = uniformRid;
 		}
 
 		public void Run()
 		{
-			if (this._InputImage == null || this._OutputImage == null)
-			{
-				return;
-			}
-
-			long computeList = this._Rd.ComputeListBegin();
-			this._Rd.ComputeListBindComputePipeline(computeList, this._PipelineRid);
-
-			this._Rd.ComputeListBindUniformSet(computeList, this._InputImageUniform.Rid, 0);
-			this._Rd.ComputeListBindUniformSet(computeList, this._OutputImageUniform.Rid, 1);
-
-			foreach (PpcsUniform uniform in this.Uniforms)
-			{
-				this._Rd.ComputeListBindUniformSet(computeList, uniform.Rid, (uint)uniform.Set);
-			}
-
-			Vector2I size = new(
-				Mathf.FloorToInt(Mathf.Min(this._InputImage.Size.X, this._OutputImage.Size.X) / 8),
-				Mathf.FloorToInt(Mathf.Min(this._InputImage.Size.Y, this._OutputImage.Size.Y) / 8)
-			);
-
-			this._Rd.ComputeListDispatch(computeList, (uint)size.X, (uint)size.Y, 1);
-			this._Rd.ComputeListEnd();
+			// TODO (or TOREDO)
 		}
 
 		public void Cleanup()
 		{
-			this._InputImageUniform?.Cleanup();
-			this._OutputImageUniform?.Cleanup();
+			foreach (KeyValuePair<int, Rid> uniform in this._Uniforms)
+			{
+				if (uniform.Value.IsValid && this._Rd.UniformSetIsValid(uniform.Value))
+				{
+					this._Rd.FreeRid(uniform.Value);
+				}
+			}
+
+			this._Uniforms.Clear();
 
 			if (this._PipelineRid.IsValid && this._Rd.ComputePipelineIsValid(this._PipelineRid))
 			{
@@ -116,7 +74,11 @@ namespace Outlines.Ppcs.Utils
 				this._PipelineRid = new();
 			}
 
-			PpcsShaderPool.CleanupShader(this._Rd, this._ShaderPath);
+			if (this.ShaderPath != null)
+			{
+				PpcsShaderPool.ReleaseShader(this._Rd, this._ShaderPath);
+				this.Rid = new();
+			}
 		}
 	}
 }

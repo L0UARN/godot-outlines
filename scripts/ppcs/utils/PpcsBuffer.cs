@@ -1,8 +1,9 @@
 using Godot;
+using Godot.Collections;
 
 namespace Outlines.Ppcs.Utils
 {
-	public class PpcsBuffer
+	public class PpcsBuffer : IPpcsUniformable
 	{
 		private RenderingDevice _Rd = null;
 		public Rid Rid { get; private set; } = new();
@@ -42,6 +43,18 @@ namespace Outlines.Ppcs.Utils
 			this.Data = data;
 		}
 
+		public Rid CreateUniform(PpcsShader shader, int slot)
+		{
+			RDUniform uniform = new()
+			{
+				UniformType = RenderingDevice.UniformType.StorageBuffer,
+				Binding = 0,
+			};
+			uniform.AddId(this.Rid);
+
+			return this._Rd.UniformSetCreate(new Array<RDUniform> { uniform }, shader.Rid, (uint)slot);
+		}
+
 		public void Cleanup()
 		{
 			if (!this.Rid.IsValid)
@@ -50,6 +63,7 @@ namespace Outlines.Ppcs.Utils
 			}
 
 			this._Rd.FreeRid(this.Rid);
+			this.Rid = new();
 		}
 	}
 }
