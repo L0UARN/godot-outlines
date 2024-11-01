@@ -3,7 +3,7 @@ using Godot.Collections;
 
 namespace Outlines.Ppcs.Utils
 {
-	public class PpcsBuffer : IPpcsUniformable
+	public class PpcsBuffer : IPpcsUniformable, IPpcsCleanupable
 	{
 		private RenderingDevice _Rd = null;
 		public Rid Rid { get; private set; } = new();
@@ -14,6 +14,12 @@ namespace Outlines.Ppcs.Utils
 			get => this._Data;
 			set
 			{
+				if (value == null)
+				{
+					this.Cleanup();
+					return;
+				}
+
 				if (value.Equals(this._Data))
 				{
 					return;
@@ -32,18 +38,18 @@ namespace Outlines.Ppcs.Utils
 			}
 		}
 
-		public PpcsBuffer(RenderingDevice renderingDevice)
-		{
-			this._Rd = renderingDevice;
-		}
-
 		public PpcsBuffer(RenderingDevice renderingDevice, byte[] data)
 		{
 			this._Rd = renderingDevice;
 			this.Data = data;
 		}
 
-		public Rid CreateUniform(PpcsShader shader, int slot)
+		public Rid GetUniformableRid()
+		{
+			return this.Rid;
+		}
+
+		public PpcsUniform CreateUniform(PpcsShader shader, int slot)
 		{
 			RDUniform uniform = new()
 			{
@@ -52,18 +58,19 @@ namespace Outlines.Ppcs.Utils
 			};
 			uniform.AddId(this.Rid);
 
-			return this._Rd.UniformSetCreate(new Array<RDUniform> { uniform }, shader.Rid, (uint)slot);
+			Rid uniformRid = this._Rd.UniformSetCreate(new Array<RDUniform> { uniform }, shader.Rid, (uint)slot);
+			return new(this._Rd, uniformRid, this.GetUniformableRid());
 		}
 
 		public void Cleanup()
 		{
-			if (!this.Rid.IsValid)
+			if (this.Rid.IsValid)
 			{
-				return;
+				this._Rd.FreeRid(this.Rid);
 			}
 
-			this._Rd.FreeRid(this.Rid);
 			this.Rid = new();
+			this._Data = null;
 		}
 	}
 }

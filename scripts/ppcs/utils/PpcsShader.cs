@@ -1,9 +1,10 @@
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 
 namespace Outlines.Ppcs.Utils
 {
-	public class PpcsShader
+	public class PpcsShader : IPpcsCleanupable
 	{
 		private RenderingDevice _Rd = null;
 
@@ -16,10 +17,18 @@ namespace Outlines.Ppcs.Utils
 			get => this._ShaderPath;
 			private set
 			{
-				if (this._ShaderPath.Equals(value))
+				if (value == null)
+				{
+					this.Cleanup();
+					return;
+				}
+
+				if (value.Equals(this._ShaderPath))
 				{
 					return;
 				}
+
+				this.Cleanup();
 
 				this.Rid = PpcsShaderPool.GetOrCreateShaderRid(this._Rd, value);
 				PpcsShaderPool.HoldShader(value);
@@ -33,22 +42,23 @@ namespace Outlines.Ppcs.Utils
 			this.ShaderPath = shaderPath;
 		}
 
-		private Dictionary<int, Rid> _Uniforms = new();
+		private Dictionary<int, PpcsUniform> _Uniforms = new();
 
 		public void BindUniform(IPpcsUniformable uniformable, int slot)
 		{
 			if (this._Uniforms.ContainsKey(slot))
 			{
-				Rid toCleanup = this._Uniforms[slot];
+				PpcsUniform previous = this._Uniforms[slot];
 
-				if (toCleanup.IsValid && this._Rd.UniformSetIsValid(toCleanup))
+				if (previous.UniformableRid.Equals(uniformable.GetUniformableRid()))
 				{
-					this._Rd.FreeRid(toCleanup);
+					return;
 				}
+
+				previous.Cleanup();
 			}
 
-			Rid uniformRid = uniformable.CreateUniform(this, slot);
-			this._Uniforms[slot] = uniformRid;
+			this._Uniforms[slot] = uniformable.CreateUniform(this, slot);
 		}
 
 		public void Run()
@@ -58,12 +68,9 @@ namespace Outlines.Ppcs.Utils
 
 		public void Cleanup()
 		{
-			foreach (KeyValuePair<int, Rid> uniform in this._Uniforms)
+			foreach (PpcsUniform uniform in this._Uniforms.Values)
 			{
-				if (uniform.Value.IsValid && this._Rd.UniformSetIsValid(uniform.Value))
-				{
-					this._Rd.FreeRid(uniform.Value);
-				}
+				uniform.Cleanup();
 			}
 
 			this._Uniforms.Clear();
@@ -71,14 +78,22 @@ namespace Outlines.Ppcs.Utils
 			if (this._PipelineRid.IsValid && this._Rd.ComputePipelineIsValid(this._PipelineRid))
 			{
 				this._Rd.FreeRid(this._PipelineRid);
-				this._PipelineRid = new();
 			}
+
+			this._PipelineRid = new();
 
 			if (this.ShaderPath != null)
 			{
 				PpcsShaderPool.ReleaseShader(this._Rd, this._ShaderPath);
-				this.Rid = new();
 			}
+
+			this.Rid = new();
+			this._ShaderPath = null;
+		}
+
+		public override string ToString()
+		{
+			return this._ShaderPath.ToString().Split("/").Last();
 		}
 	}
 }

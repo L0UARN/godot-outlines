@@ -3,7 +3,7 @@ using Godot.Collections;
 
 namespace Outlines.Ppcs.Utils
 {
-	public class PpcsImage : IPpcsUniformable
+	public class PpcsImage : IPpcsUniformable, IPpcsCleanupable
 	{
 		private RenderingDevice _Rd = null;
 
@@ -64,7 +64,12 @@ namespace Outlines.Ppcs.Utils
 			this.Rid = rid;
 		}
 
-		public Rid CreateUniform(PpcsShader shader, int slot)
+		public Rid GetUniformableRid()
+		{
+			return this._Rid;
+		}
+
+		public PpcsUniform CreateUniform(PpcsShader shader, int slot)
 		{
 			RDUniform uniform = new()
 			{
@@ -73,18 +78,19 @@ namespace Outlines.Ppcs.Utils
 			};
 			uniform.AddId(this._Rid);
 
-			return this._Rd.UniformSetCreate(new Array<RDUniform> { uniform }, shader.Rid, (uint)slot);
+			Rid uniformRid = this._Rd.UniformSetCreate(new Array<RDUniform> { uniform }, shader.Rid, (uint)slot);
+			return new(this._Rd, uniformRid, this.GetUniformableRid());
 		}
 
 		public void Cleanup()
 		{
-			if (!this._Rid.IsValid || !this._Rd.TextureIsValid(this._Rid))
+			if (this._Rid.IsValid && this._Rd.TextureIsValid(this._Rid))
 			{
-				return;
+				this._Rd.FreeRid(_Rid);
 			}
 
-			this._Rd.FreeRid(_Rid);
 			this._Rid = new();
+			this._Size = Vector2I.Zero;
 		}
 	}
 }

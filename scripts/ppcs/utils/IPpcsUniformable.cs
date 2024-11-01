@@ -4,6 +4,7 @@ namespace Outlines.Ppcs.Utils
 {
 	public interface IPpcsUniformable
 	{
-		public Rid CreateUniform(PpcsShader shader, int slot);
+		public Rid GetUniformableRid();
+		public PpcsUniform CreateUniform(PpcsShader shader, int slot);
 	}
 }
