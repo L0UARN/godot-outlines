@@ -4,8 +4,8 @@ namespace Outlines.Ppcs.Structs
 {
 	public class PpcsArcFromShaderToOutput
 	{
-		public int FromShaderSlot { get; set; } = 0;
-		public PpcsImage ToOutput { get; set; } = null;
+		public int FromShaderSlot { get; private set; } = 0;
+		public PpcsImage ToOutput { get; private set; } = null;
 
 		public PpcsArcFromShaderToOutput(int fromShaderSlot, PpcsImage toOutput)
 		{

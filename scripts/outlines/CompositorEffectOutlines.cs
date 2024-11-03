@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Godot;
 using Outlines.Ppcs;
 using Outlines.Ppcs.Structs;
@@ -28,7 +29,7 @@ namespace Outlines
 				}
 
 				this._OutlinesSize = value;
-				// TODO: rebuild the pipeline accounting for the new outlines size
+				// TODO: rebuild the graph accounting for the new outlines size
 			}
 		}
 
@@ -51,62 +52,81 @@ namespace Outlines
 				}
 
 				this._GlowRadius = value;
-				// TODO: rebuild the pipeline accounting for the new glow radius
+				// TODO: rebuild the graph accounting for the new glow radius
 			}
 		}
 
 		private RenderingDevice _Rd = null;
-		// private PpcsPipeline _Pipeline = null;
+		private PpcsGraph _Graph = null;
+		private readonly List<IPpcsCleanupable> _Resources = new();
 
 		private void SetupEffect()
 		{
-			// this._Rd = RenderingServer.GetRenderingDevice();
-			// if (this._Rd == null)
-			// {
-			// 	return;
-			// }
+			this._Rd = RenderingServer.GetRenderingDevice();
 
-			// this._Pipeline = new(this._Rd);
+			if (this._Rd == null)
+			{
+				return;
+			}
 
-			// PpcsShader jfaInit = new(this._Rd, "res://shaders/jfa_init.glsl");
-			// this._Pipeline.Steps.Add(jfaInit);
+			this._Graph = new(this._Rd);
+			this._Resources.Add(this._Graph);
 
-			// int stepsNeeded = Mathf.CeilToInt(Math.Log2(this._OutlinesSize));
-			// for (int i = stepsNeeded - 1; i >= 0; i--)
-			// {
-			// 	PpcsShader jfaStep = new(this._Rd, "res://shaders/jfa_step.glsl");
-			// 	PpcsBuffer stepSizeBuffer = new(this._Rd, BitConverter.GetBytes((int)Mathf.Pow(2, i)));
-			// 	PpcsUniformBuffer stepSizeBufferUniform = new(this._Rd, jfaStep, 2, stepSizeBuffer);
-			// 	jfaStep.Uniforms.Add(stepSizeBufferUniform);
-			// 	this._Pipeline.Steps.Add(jfaStep);
-			// }
+			PpcsShader jfaInit = new(this._Rd, "res://shaders/jfa_init.glsl");
+			this._Resources.Add(jfaInit);
 
-			// PpcsShader jfaOutlines = new(this._Rd, "res://shaders/jfa_outlines.glsl");
-			// PpcsBuffer outlinesSizeBuffer = new(this._Rd, BitConverter.GetBytes(this._OutlinesSize));
-			// PpcsUniformBuffer outlinesSizeBufferUniform = new(this._Rd, jfaOutlines, 2, outlinesSizeBuffer);
-			// jfaOutlines.Uniforms.Add(outlinesSizeBufferUniform);
-			// this._Pipeline.Steps.Add(jfaOutlines);
+			int stepsNeeded = Mathf.CeilToInt(Math.Log2(this._OutlinesSize));
+			PpcsShader lastJfaStep = null;
 
-			// if (this._GlowRadius > 0)
-			// {
-			// 	PpcsShader glowPass1 = new(this._Rd, "res://shaders/glow.glsl");
-			// 	PpcsBuffer glowPass1SizeBuffer = new(this._Rd, BitConverter.GetBytes(this._GlowRadius));
-			// 	PpcsUniformBuffer glowPass1SizeBufferUniform = new(this._Rd, glowPass1, 2, glowPass1SizeBuffer);
-			// 	glowPass1.Uniforms.Add(glowPass1SizeBufferUniform);
-			// 	PpcsBuffer glowPass1DirectionBuffer = new(this._Rd, BitConverter.GetBytes(false));
-			// 	PpcsUniformBuffer glowPass1DirectionBufferUniform = new(this._Rd, glowPass1, 3, glowPass1DirectionBuffer);
-			// 	glowPass1.Uniforms.Add(glowPass1DirectionBufferUniform);
-			// 	this._Pipeline.Steps.Add(glowPass1);
+			for (int i = stepsNeeded - 1; i >= 0; i--)
+			{
+				PpcsShader nextJfaStep = new(this._Rd, "res://shaders/jfa_step.glsl");
+				this._Resources.Add(nextJfaStep);
+				PpcsBuffer stepSizeBuffer = new(this._Rd, BitConverter.GetBytes((int)Mathf.Pow(2, i)));
+				this._Resources.Add(stepSizeBuffer);
+				nextJfaStep.BindUniform(stepSizeBuffer, 2);
 
-			// 	PpcsShader glowPass2 = new(this._Rd, "res://shaders/glow.glsl");
-			// 	PpcsBuffer glowPass2SizeBuffer = new(this._Rd, BitConverter.GetBytes(this._GlowRadius));
-			// 	PpcsUniformBuffer glowPass2SizeBufferUniform = new(this._Rd, glowPass2, 2, glowPass2SizeBuffer);
-			// 	glowPass2.Uniforms.Add(glowPass2SizeBufferUniform);
-			// 	PpcsBuffer glowPass2DirectionBuffer = new(this._Rd, BitConverter.GetBytes(true));
-			// 	PpcsUniformBuffer glowPass2DirectionBufferUniform = new(this._Rd, glowPass2, 3, glowPass2DirectionBuffer);
-			// 	glowPass2.Uniforms.Add(glowPass2DirectionBufferUniform);
-			// 	this._Pipeline.Steps.Add(glowPass2);
-			// }
+				if (lastJfaStep == null)
+				{
+					this._Graph.CreateArcFromShaderToShader(jfaInit, 1, nextJfaStep, 0);
+				}
+				else
+				{
+					this._Graph.CreateArcFromShaderToShader(lastJfaStep, 1, nextJfaStep, 0);
+				}
+
+				lastJfaStep = nextJfaStep;
+			}
+
+			PpcsShader jfaOutlines = new(this._Rd, "res://shaders/jfa_outlines.glsl");
+			this._Resources.Add(jfaOutlines);
+			PpcsBuffer outlinesSizeBuffer = new(this._Rd, BitConverter.GetBytes(this._OutlinesSize));
+			this._Resources.Add(outlinesSizeBuffer);
+			jfaOutlines.BindUniform(outlinesSizeBuffer, 2);
+			this._Graph.CreateArcFromShaderToShader(lastJfaStep, 1, jfaOutlines, 0);
+
+			if (this._GlowRadius <= 0)
+			{
+				return;
+			}
+
+			PpcsBuffer blurRadiusBuffer = new(this._Rd, BitConverter.GetBytes(this._GlowRadius));
+			this._Resources.Add(blurRadiusBuffer);
+
+			PpcsShader boxBlur1 = new(this._Rd, "res://shaders/box_blur.glsl");
+			this._Resources.Add(boxBlur1);
+			boxBlur1.BindUniform(blurRadiusBuffer, 2);
+			this._Graph.CreateArcFromShaderToShader(jfaOutlines, 1, boxBlur1, 0);
+
+			PpcsShader boxBlur2 = new(this._Rd, "res://shaders/box_blur.glsl");
+			this._Resources.Add(boxBlur2);
+			boxBlur2.BindUniform(blurRadiusBuffer, 2);
+			this._Graph.CreateArcFromShaderToShader(boxBlur1, 1, boxBlur2, 0);
+
+			PpcsShader composite = new(this._Rd, "res://shaders/composite.glsl");
+			this._Resources.Add(composite);
+			this._Graph.CreateArcFromShaderToShader(jfaOutlines, 1, composite, 0);
+			this._Graph.CreateArcFromShaderToShader(boxBlur2, 1, composite, 1);
 		}
 
 		public CompositorEffectOutlines() : base()
@@ -127,44 +147,33 @@ namespace Outlines
 		{
 			base._RenderCallback(effectCallbackType, renderData);
 
-			// if (this._Rd == null)
-			// {
-			// 	return;
-			// }
+			if (this._Rd == null)
+			{
+				return;
+			}
 
-			// RenderSceneBuffersRD renderSceneBuffers = (RenderSceneBuffersRD)renderData.GetRenderSceneBuffers();
-			// for (uint i = 0; i < renderSceneBuffers.GetViewCount(); i++)
-			// {
-			// 	Rid rawImage = renderSceneBuffers.GetColorLayer(i);
-			// 	PpcsImage image = new(this._Rd, rawImage);
-			// 	this._Pipeline.Run(image, image);
-			// }
+			RenderSceneBuffersRD renderSceneBuffers = (RenderSceneBuffersRD)renderData.GetRenderSceneBuffers();
+
+			for (uint i = 0; i < renderSceneBuffers.GetViewCount(); i++)
+			{
+				Rid rawImage = renderSceneBuffers.GetColorLayer(i);
+
+				// TODO: If the graph has not been built yet, finish setting it up by setting the input and output images, then building it
+				// TODO: update the input and output images' RIDs to be `rawImage`
+				// TODO: resize the graph's buffers to match `rawImage`'s size if needed
+
+				this._Graph.Run();
+			}
 		}
 
 		private void Cleanup()
 		{
-			// foreach (PpcsShader shader in this._Pipeline.Steps)
-			// {
-			// 	foreach (PpcsUniform uniform in shader.Uniforms)
-			// 	{
-			// 		// The uniforms must be cleaned up before the objects
-			// 		uniform.Cleanup();
+			foreach (IPpcsCleanupable resource in this._Resources)
+			{
+				resource.Cleanup();
+			}
 
-			// 		if (uniform is PpcsUniformBuffer bufferUniform)
-			// 		{
-			// 			bufferUniform.Buffer.Cleanup();
-			// 		}
-			// 		else if (uniform is PpcsUniformImage imageUniform)
-			// 		{
-			// 			imageUniform.Image.Cleanup();
-			// 		}
-			// 	}
-
-			// 	// The shaders must be cleaned up after the uniforms
-			// 	shader.Cleanup();
-			// }
-
-			// this._Pipeline.Cleanup();
+			this._Resources.Clear();
 		}
 
 		public override void _Notification(int what)

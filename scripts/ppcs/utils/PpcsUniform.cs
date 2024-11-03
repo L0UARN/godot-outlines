@@ -4,7 +4,7 @@ namespace Outlines.Ppcs.Utils
 {
 	public class PpcsUniform : IPpcsCleanupable
 	{
-		private RenderingDevice _Rd = null;
+		private readonly RenderingDevice _Rd = null;
 		public Rid Rid { get; private set; } = new();
 		public Rid UniformableRid { get; private set; } = new();
 

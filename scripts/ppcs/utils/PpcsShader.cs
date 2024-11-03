@@ -42,7 +42,7 @@ namespace Outlines.Ppcs.Utils
 			this.ShaderPath = shaderPath;
 		}
 
-		private Dictionary<int, PpcsUniform> _Uniforms = new();
+		private readonly Dictionary<int, PpcsUniform> _Uniforms = new();
 
 		public void BindUniform(IPpcsUniformable uniformable, int slot)
 		{
@@ -61,9 +61,32 @@ namespace Outlines.Ppcs.Utils
 			this._Uniforms[slot] = uniformable.CreateUniform(this, slot);
 		}
 
-		public void Run()
+		public void UnbindUniform(int slot)
 		{
-			// TODO (or TOREDO)
+			if (!this._Uniforms.ContainsKey(slot))
+			{
+				return;
+			}
+
+			this._Uniforms[slot].Cleanup();
+			this._Uniforms.Remove(slot);
+		}
+
+		public void Run(Vector2I size)
+		{
+			long computeList = this._Rd.ComputeListBegin();
+			this._Rd.ComputeListBindComputePipeline(computeList, this._PipelineRid);
+
+			foreach (KeyValuePair<int, PpcsUniform> uniform in this._Uniforms)
+			{
+				this._Rd.ComputeListBindUniformSet(computeList, uniform.Value.Rid, (uint)uniform.Key);
+			}
+
+			uint runSizeX = (uint) Mathf.FloorToInt(Mathf.Min(size.X, size.X) / 8);
+			uint runSizeY = (uint) Mathf.FloorToInt(Mathf.Min(size.Y, size.Y) / 8);
+
+			this._Rd.ComputeListDispatch(computeList, runSizeX, runSizeY, 1);
+			this._Rd.ComputeListEnd();
 		}
 
 		public void Cleanup()
@@ -91,6 +114,7 @@ namespace Outlines.Ppcs.Utils
 			this._ShaderPath = null;
 		}
 
+		// TODO: remove this once done debugging
 		public override string ToString()
 		{
 			return this._ShaderPath.ToString().Split("/").Last();

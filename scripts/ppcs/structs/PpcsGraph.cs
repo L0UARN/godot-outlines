@@ -1,17 +1,20 @@
 using System.Collections.Generic;
-using System.Linq;
 using Godot;
 using Outlines.Ppcs.Utils;
 
 namespace Outlines.Ppcs.Structs
 {
-	public class PpcsGraph
+	public class PpcsGraph : IPpcsCleanupable
 	{
-		private RenderingDevice _Rd = null;
-		private Dictionary<PpcsImage, HashSet<PpcsArcFromInputToShader>> _InputGraph = new();
-		private Dictionary<PpcsShader, HashSet<PpcsArcFromShaderToShader>> _ShaderGraph = new();
-		private Dictionary<PpcsShader, HashSet<PpcsArcFromShaderToOutput>> _OutputGraph = new();
-		private List<PpcsImage> _BufferPool = new();
+		private readonly RenderingDevice _Rd = null;
+
+		private readonly Dictionary<PpcsImage, HashSet<PpcsArcFromInputToShader>> _InputGraph = new();
+		private readonly Dictionary<PpcsShader, HashSet<PpcsArcFromShaderToShader>> _ShaderGraph = new();
+		private readonly Dictionary<PpcsShader, HashSet<PpcsArcFromShaderToOutput>> _OutputGraph = new();
+
+		private Vector2I _BufferSize = Vector2I.Zero;
+		private readonly List<PpcsImage> _BufferPool = new();
+		private readonly List<PpcsShader> _Pipeline = new();
 
 		public PpcsGraph(RenderingDevice renderingDevice)
 		{
@@ -30,6 +33,8 @@ namespace Outlines.Ppcs.Structs
 
 		public void CreateArcFromShaderToShader(PpcsShader fromShader, int fromShaderSlot, PpcsShader toShader, int toShaderSlot)
 		{
+			// TODO: check if adding this arc would make the graph cyclic, and throw an exception if so
+
 			if (!this._ShaderGraph.ContainsKey(fromShader))
 			{
 				this._ShaderGraph[fromShader] = new(1);
@@ -50,7 +55,28 @@ namespace Outlines.Ppcs.Structs
 
 		public void Build()
 		{
-			List<PpcsShader> pipeline = new();
+			// The image buffers must be large enough to process all of the input images
+			this._BufferSize = Vector2I.Zero;
+
+			foreach (PpcsImage inputImage in this._InputGraph.Keys)
+			{
+				if (this._BufferSize.Equals(Vector2I.Zero))
+				{
+					this._BufferSize = inputImage.Size;
+					continue;
+				}
+
+				if (inputImage.Size.X > this._BufferSize.X)
+				{
+					this._BufferSize.X = inputImage.Size.X;
+				}
+
+				if (inputImage.Size.Y > this._BufferSize.Y)
+				{
+					this._BufferSize.Y = inputImage.Size.Y;
+				}
+			}
+
 			Stack<PpcsShader> toVisit = new();
 
 			foreach (KeyValuePair<PpcsImage, HashSet<PpcsArcFromInputToShader>> inputArc in this._InputGraph)
@@ -60,6 +86,12 @@ namespace Outlines.Ppcs.Structs
 					arcDestination.ToShader.BindUniform(inputArc.Key, arcDestination.ToShaderSlot);
 					toVisit.Push(arcDestination.ToShader);
 				}
+			}
+
+			GD.Print("Starting shaders:");
+			foreach (PpcsShader startingShader in toVisit)
+			{
+				GD.Print($"- {startingShader}");
 			}
 
 			while (toVisit.Count > 0)
@@ -72,10 +104,10 @@ namespace Outlines.Ppcs.Structs
 				{
 					foreach (PpcsArcFromShaderToShader shaderArc in this._ShaderGraph[justVisited])
 					{
-						int toShaderIndex = pipeline.IndexOf(shaderArc.ToShader);
+						int toShaderIndex = this._Pipeline.IndexOf(shaderArc.ToShader);
 
 						// No need to visit a shader that has already been visited
-						if (toShaderIndex != -1)
+						if (toShaderIndex == -1)
 						{
 							toVisit.Push(shaderArc.ToShader);
 						}
@@ -87,7 +119,7 @@ namespace Outlines.Ppcs.Structs
 						}
 
 						// Bind the output of `justVisited` to the input of the shader that depends on it
-						PpcsImage buffer = new(this._Rd, Vector2I.Zero);
+						PpcsImage buffer = new(this._Rd, this._BufferSize);
 						justVisited.BindUniform(buffer, shaderArc.FromShaderSlot);
 						shaderArc.ToShader.BindUniform(buffer, shaderArc.ToShaderSlot);
 						this._BufferPool.Add(buffer);
@@ -106,14 +138,66 @@ namespace Outlines.Ppcs.Structs
 				// Add `justVisited` at the end of the pipeline if no shaders that depends on it are already in the pipeline
 				if (pipelineInsertIndex == -1)
 				{
-					pipeline.Add(justVisited);
+					this._Pipeline.Remove(justVisited);
+					this._Pipeline.Add(justVisited);
 				}
 				// Insert it before the shaders that need it if there are any
 				else
 				{
-					pipeline.Insert(pipelineInsertIndex, justVisited);
+					this._Pipeline.Remove(justVisited);
+					this._Pipeline.Insert(pipelineInsertIndex, justVisited);
 				}
 			}
+
+			GD.Print("Pipeline:");
+			for (int i = 0; i < this._Pipeline.Count; i++)
+			{
+				GD.Print($"{i}. {this._Pipeline[i]}");
+			}
+		}
+
+		public void Run()
+		{
+			foreach (PpcsShader step in this._Pipeline)
+			{
+				step.Run(this._BufferSize);
+			}
+		}
+
+		public void Cleanup()
+		{
+			foreach (KeyValuePair<PpcsImage, HashSet<PpcsArcFromInputToShader>> inputArc in this._InputGraph)
+			{
+				foreach (PpcsArcFromInputToShader arcData in inputArc.Value)
+				{
+					arcData.ToShader.UnbindUniform(arcData.ToShaderSlot);
+				}
+			}
+
+			foreach (KeyValuePair<PpcsShader, HashSet<PpcsArcFromShaderToShader>> shaderArc in this._ShaderGraph)
+			{
+				foreach (PpcsArcFromShaderToShader arcData in shaderArc.Value)
+				{
+					shaderArc.Key.UnbindUniform(arcData.FromShaderSlot);
+					arcData.ToShader.UnbindUniform(arcData.ToShaderSlot);
+				}
+			}
+
+			foreach (KeyValuePair<PpcsShader, HashSet<PpcsArcFromShaderToOutput>> outputArc in this._OutputGraph)
+			{
+				foreach (PpcsArcFromShaderToOutput arcData in outputArc.Value)
+				{
+					outputArc.Key.UnbindUniform(arcData.FromShaderSlot);
+				}
+			}
+
+			foreach (PpcsImage buffer in this._BufferPool)
+			{
+				buffer.Cleanup();
+			}
+
+			this._BufferPool.Clear();
+			this._Pipeline.Clear();
 		}
 	}
 }

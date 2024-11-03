@@ -5,7 +5,7 @@ namespace Outlines.Ppcs.Utils
 {
 	public class PpcsImage : IPpcsUniformable, IPpcsCleanupable
 	{
-		private RenderingDevice _Rd = null;
+		private readonly RenderingDevice _Rd = null;
 
 		private Vector2I _Size = Vector2I.Zero;
 		public Vector2I Size

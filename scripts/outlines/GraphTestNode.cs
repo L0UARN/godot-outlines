@@ -15,7 +15,7 @@ namespace Outlines
 			base._Ready();
 
 			this._Rd = RenderingServer.GetRenderingDevice();
-			this._Graph = new();
+			this._Graph = new(this._Rd);
 
 			PpcsShader jfaInit = new(this._Rd, "res://shaders/jfa_init.glsl");
 			PpcsShader jfaStep = new(this._Rd, "res://shaders/jfa_step.glsl");
@@ -35,6 +35,9 @@ namespace Outlines
 			this._Graph.CreateArcFromShaderToShader(boxBlur1, 1, boxBlur2, 0);
 			this._Graph.CreateArcFromShaderToShader(boxBlur2, 1, composite, 1);
 			this._Graph.CreateArcFromShaderToOutput(composite, 2, outputImage);
+
+			this._Graph.Build();
+			this._Graph.Cleanup();
 		}
 	}
 }

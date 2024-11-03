@@ -5,7 +5,7 @@ namespace Outlines.Ppcs.Utils
 {
 	public class PpcsBuffer : IPpcsUniformable, IPpcsCleanupable
 	{
-		private RenderingDevice _Rd = null;
+		private readonly RenderingDevice _Rd = null;
 		public Rid Rid { get; private set; } = new();
 
 		private byte[] _Data = null;
@@ -70,7 +70,6 @@ namespace Outlines.Ppcs.Utils
 			}
 
 			this.Rid = new();
-			this._Data = null;
 		}
 	}
 }
