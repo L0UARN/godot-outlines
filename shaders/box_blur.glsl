@@ -12,8 +12,10 @@ void main() {
 	ivec2 image_size = imageSize(input_image);
 	ivec2 current_position = ivec2(gl_GlobalInvocationID.xy);
 
-	vec4 color_sum = vec4(0.0f);
-	int pixel_count = 0;
+	vec3 color_sum = vec3(0.0f);
+	int color_count = 0;
+	float alpha_sum = 0.0f;
+	int alpha_count = 0;
 
 	for (int i = -brb.radius; i <= brb.radius; i++) {
 		ivec2 check_position = ivec2(
@@ -27,11 +29,15 @@ void main() {
 		}
 
 		vec4 check_pixel = imageLoad(input_image, check_position);
-		color_sum += check_pixel;
-		pixel_count++;
+
+		if (check_pixel.a > 0.0f) {
+			color_sum += check_pixel.xyz;
+			color_count++;
+		}
+
+		alpha_sum += check_pixel.a;
+		alpha_count++;
 	}
 
-	// vec4 current_pixel = imageLoad(input_image, current_position);
-	// imageStore(output_image, current_position, current_pixel);
-	imageStore(output_image, current_position, color_sum / float(pixel_count));
+	imageStore(output_image, current_position, vec4(color_sum / float(color_count), alpha_sum / float(alpha_count)));
 }
