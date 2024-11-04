@@ -9,8 +9,6 @@ script = ExtResource("1_jdrhh")
 OutlinesCaptureViewport = NodePath("../CaptureViewport")
 OutlinesCaptureCamera = NodePath("../CaptureViewport/CaptureCamera")
 OutlinesDisplayRect = NodePath("../DisplayRect")
-OutlinesSize = 16
-GlowRadius = 8
 
 [node name="CaptureViewport" type="SubViewport" parent="."]
 

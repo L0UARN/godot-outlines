@@ -13,7 +13,7 @@ namespace Outlines.Ppcs.Structs
 		private readonly Dictionary<PpcsShader, HashSet<PpcsArcFromShaderToOutput>> _OutputGraph = new();
 
 		private Vector2I _BufferSize = Vector2I.Zero;
-		private readonly List<PpcsImage> _BufferPool = new();
+		private readonly Dictionary<PpcsGraphBufferBinding, PpcsImage> _BoundBuffers = new();
 		private readonly List<PpcsShader> _Pipeline = new();
 
 		public PpcsGraph(RenderingDevice renderingDevice)
@@ -82,7 +82,6 @@ namespace Outlines.Ppcs.Structs
 				}
 			}
 
-			Dictionary<(PpcsShader, int), PpcsImage> boundBuffers = new();
 			Queue<PpcsShader> toVisit = new();
 
 			foreach (KeyValuePair<PpcsImage, HashSet<PpcsArcFromInputToShader>> inputArc in this._InputGraph)
@@ -120,16 +119,16 @@ namespace Outlines.Ppcs.Structs
 
 						// Bind the output of `justVisited` to the input of the shader that depends on it
 						PpcsImage buffer = null;
+						PpcsGraphBufferBinding bufferBinding = new(justVisited, shaderArc.FromShaderSlot);
 
-						if (boundBuffers.ContainsKey((justVisited, shaderArc.FromShaderSlot)))
+						if (this._BoundBuffers.ContainsKey(bufferBinding))
 						{
-							buffer = boundBuffers[(justVisited, shaderArc.FromShaderSlot)];
+							buffer = this._BoundBuffers[bufferBinding];
 						}
 						else
 						{
 							buffer = new(this._Rd, this._BufferSize);
-							this._BufferPool.Add(buffer);
-							boundBuffers[(justVisited, shaderArc.FromShaderSlot)] = buffer;
+							this._BoundBuffers[bufferBinding] = buffer;
 						}
 
 						justVisited.BindUniform(buffer, shaderArc.FromShaderSlot);
@@ -196,12 +195,12 @@ namespace Outlines.Ppcs.Structs
 				}
 			}
 
-			foreach (PpcsImage buffer in this._BufferPool)
+			foreach (KeyValuePair<PpcsGraphBufferBinding, PpcsImage> boundBuffer in this._BoundBuffers)
 			{
-				buffer.Cleanup();
+				boundBuffer.Value.Cleanup();
 			}
 
-			this._BufferPool.Clear();
+			this._BoundBuffers.Clear();
 			this._Pipeline.Clear();
 		}
 	}
