@@ -53,6 +53,11 @@ namespace Outlines.Ppcs.Structs
 			this._OutputGraph[fromShader].Add(new(fromShaderSlot, toOutput));
 		}
 
+		public bool IsBuilt()
+		{
+			return this._Pipeline.Count > 0;
+		}
+
 		public void Build()
 		{
 			// The image buffers must be large enough to process all of the input images
@@ -77,26 +82,21 @@ namespace Outlines.Ppcs.Structs
 				}
 			}
 
-			Stack<PpcsShader> toVisit = new();
+			Dictionary<(PpcsShader, int), PpcsImage> boundBuffers = new();
+			Queue<PpcsShader> toVisit = new();
 
 			foreach (KeyValuePair<PpcsImage, HashSet<PpcsArcFromInputToShader>> inputArc in this._InputGraph)
 			{
 				foreach (PpcsArcFromInputToShader arcDestination in inputArc.Value)
 				{
 					arcDestination.ToShader.BindUniform(inputArc.Key, arcDestination.ToShaderSlot);
-					toVisit.Push(arcDestination.ToShader);
+					toVisit.Enqueue(arcDestination.ToShader);
 				}
-			}
-
-			GD.Print("Starting shaders:");
-			foreach (PpcsShader startingShader in toVisit)
-			{
-				GD.Print($"- {startingShader}");
 			}
 
 			while (toVisit.Count > 0)
 			{
-				PpcsShader justVisited = toVisit.Pop();
+				PpcsShader justVisited = toVisit.Dequeue();
 				int pipelineInsertIndex = -1;
 
 				// Explore the shaders that depend on `justVisited`
@@ -109,20 +109,31 @@ namespace Outlines.Ppcs.Structs
 						// No need to visit a shader that has already been visited
 						if (toShaderIndex == -1)
 						{
-							toVisit.Push(shaderArc.ToShader);
+							toVisit.Enqueue(shaderArc.ToShader);
 						}
 
 						// If the shader that depends on `justVisited` is before `justVisited` in the pipeline, then make it so `justVisited` is inserted before it
-						if (toShaderIndex != -1 && (toShaderIndex == -1 || toShaderIndex < pipelineInsertIndex))
+						if (pipelineInsertIndex == -1 || (toShaderIndex != -1 && toShaderIndex < pipelineInsertIndex))
 						{
 							pipelineInsertIndex = toShaderIndex;
 						}
 
 						// Bind the output of `justVisited` to the input of the shader that depends on it
-						PpcsImage buffer = new(this._Rd, this._BufferSize);
+						PpcsImage buffer = null;
+
+						if (boundBuffers.ContainsKey((justVisited, shaderArc.FromShaderSlot)))
+						{
+							buffer = boundBuffers[(justVisited, shaderArc.FromShaderSlot)];
+						}
+						else
+						{
+							buffer = new(this._Rd, this._BufferSize);
+							this._BufferPool.Add(buffer);
+							boundBuffers[(justVisited, shaderArc.FromShaderSlot)] = buffer;
+						}
+
 						justVisited.BindUniform(buffer, shaderArc.FromShaderSlot);
 						shaderArc.ToShader.BindUniform(buffer, shaderArc.ToShaderSlot);
-						this._BufferPool.Add(buffer);
 					}
 				}
 
@@ -147,12 +158,6 @@ namespace Outlines.Ppcs.Structs
 					this._Pipeline.Remove(justVisited);
 					this._Pipeline.Insert(pipelineInsertIndex, justVisited);
 				}
-			}
-
-			GD.Print("Pipeline:");
-			for (int i = 0; i < this._Pipeline.Count; i++)
-			{
-				GD.Print($"{i}. {this._Pipeline[i]}");
 			}
 		}
 

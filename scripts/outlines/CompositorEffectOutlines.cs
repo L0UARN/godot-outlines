@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Godot;
-using Outlines.Ppcs;
 using Outlines.Ppcs.Structs;
 using Outlines.Ppcs.Utils;
 
@@ -59,6 +58,10 @@ namespace Outlines
 		private RenderingDevice _Rd = null;
 		private PpcsGraph _Graph = null;
 		private readonly List<IPpcsCleanupable> _Resources = new();
+		private PpcsShader _FirstShader = null;
+		private int _FirstShaderInputSlot = -1;
+		private PpcsShader _LastShader = null;
+		private int _LastShaderOutputSlot = -1;
 
 		private void SetupEffect()
 		{
@@ -74,6 +77,8 @@ namespace Outlines
 
 			PpcsShader jfaInit = new(this._Rd, "res://shaders/jfa_init.glsl");
 			this._Resources.Add(jfaInit);
+			this._FirstShader = jfaInit;
+			this._FirstShaderInputSlot = 0;
 
 			int stepsNeeded = Mathf.CeilToInt(Math.Log2(this._OutlinesSize));
 			PpcsShader lastJfaStep = null;
@@ -105,6 +110,9 @@ namespace Outlines
 			jfaOutlines.BindUniform(outlinesSizeBuffer, 2);
 			this._Graph.CreateArcFromShaderToShader(lastJfaStep, 1, jfaOutlines, 0);
 
+			this._LastShader = jfaOutlines;
+			this._LastShaderOutputSlot = 1;
+
 			if (this._GlowRadius <= 0)
 			{
 				return;
@@ -115,18 +123,28 @@ namespace Outlines
 
 			PpcsShader boxBlur1 = new(this._Rd, "res://shaders/box_blur.glsl");
 			this._Resources.Add(boxBlur1);
+			PpcsBuffer blurDirectionBuffer1 = new(this._Rd, BitConverter.GetBytes(true));
 			boxBlur1.BindUniform(blurRadiusBuffer, 2);
+			boxBlur1.BindUniform(blurDirectionBuffer1, 3);
 			this._Graph.CreateArcFromShaderToShader(jfaOutlines, 1, boxBlur1, 0);
 
 			PpcsShader boxBlur2 = new(this._Rd, "res://shaders/box_blur.glsl");
 			this._Resources.Add(boxBlur2);
+			PpcsBuffer blurDirectionBuffer2 = new(this._Rd, BitConverter.GetBytes(false));
 			boxBlur2.BindUniform(blurRadiusBuffer, 2);
+			boxBlur2.BindUniform(blurDirectionBuffer2, 3);
 			this._Graph.CreateArcFromShaderToShader(boxBlur1, 1, boxBlur2, 0);
 
 			PpcsShader composite = new(this._Rd, "res://shaders/composite.glsl");
 			this._Resources.Add(composite);
+			PpcsImage temp = new(this._Rd, new Vector2I(1920, 1080));
+			this._Resources.Add(temp);
+			composite.BindUniform(temp, 2);
 			this._Graph.CreateArcFromShaderToShader(jfaOutlines, 1, composite, 0);
 			this._Graph.CreateArcFromShaderToShader(boxBlur2, 1, composite, 1);
+
+			this._LastShader = composite;
+			this._LastShaderOutputSlot = 2;
 		}
 
 		public CompositorEffectOutlines() : base()
@@ -154,16 +172,25 @@ namespace Outlines
 
 			RenderSceneBuffersRD renderSceneBuffers = (RenderSceneBuffersRD)renderData.GetRenderSceneBuffers();
 
-			for (uint i = 0; i < renderSceneBuffers.GetViewCount(); i++)
-			{
-				Rid rawImage = renderSceneBuffers.GetColorLayer(i);
+			// TODO: find a way to make the graph run with multiple input images
+			// Maybe just have two inputs images ?
 
-				// TODO: If the graph has not been built yet, finish setting it up by setting the input and output images, then building it
-				// TODO: update the input and output images' RIDs to be `rawImage`
+			// for (uint i = 0; i < renderSceneBuffers.GetViewCount(); i++)
+			// {
+				Rid rawImage = renderSceneBuffers.GetColorLayer(0);
+
+				if (!this._Graph.IsBuilt())
+				{
+					PpcsImage image = new(this._Rd, rawImage);
+					this._Graph.CreateArcFromInputToShader(image, this._FirstShader, this._FirstShaderInputSlot);
+					this._Graph.CreateArcFromShaderToOutput(this._LastShader, this._LastShaderOutputSlot, image);
+					this._Graph.Build();
+				}
+
 				// TODO: resize the graph's buffers to match `rawImage`'s size if needed
 
 				this._Graph.Run();
-			}
+			// }
 		}
 
 		private void Cleanup()

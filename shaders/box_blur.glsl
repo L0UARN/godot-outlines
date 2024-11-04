@@ -31,5 +31,7 @@ void main() {
 		pixel_count++;
 	}
 
+	// vec4 current_pixel = imageLoad(input_image, current_position);
+	// imageStore(output_image, current_position, current_pixel);
 	imageStore(output_image, current_position, color_sum / float(pixel_count));
 }

@@ -6,8 +6,8 @@ namespace Outlines.Ppcs.Utils
 {
 	public static class PpcsShaderPool
 	{
-		private static Dictionary<StringName, Rid> _ShaderRids = new();
-		private static Dictionary<StringName, int> _ShaderReferenceCounts = new();
+		private readonly static Dictionary<StringName, Rid> _ShaderRids = new();
+		private readonly static Dictionary<StringName, int> _ShaderReferenceCounts = new();
 
 		public static Rid GetOrCreateShaderRid(RenderingDevice renderingDevice, StringName shaderPath)
 		{

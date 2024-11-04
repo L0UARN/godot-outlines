@@ -32,6 +32,8 @@ namespace Outlines.Ppcs.Utils
 
 				this.Rid = PpcsShaderPool.GetOrCreateShaderRid(this._Rd, value);
 				PpcsShaderPool.HoldShader(value);
+				this._PipelineRid = this._Rd.ComputePipelineCreate(this.Rid);
+
 				this._ShaderPath = value;
 			}
 		}

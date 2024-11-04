@@ -1,8 +1,8 @@
 [gd_scene load_steps=15 format=3 uid="uid://b2bgu3j7lj8xq"]
 
 [ext_resource type="Script" path="res://scripts/outlines/OutlinerComponent.cs" id="1_4y7fx"]
-[ext_resource type="Script" path="res://scripts/outlines/GraphTestNode.cs" id="2_brma8"]
 [ext_resource type="PackedScene" uid="uid://4q2l35yt3uyr" path="res://outlines_layer.tscn" id="2_udepg"]
+[ext_resource type="Script" path="res://scripts/outlines/OutlinerComponentDemo.cs" id="2_vmmf1"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7d8ek"]
 albedo_color = Color(1, 0, 0, 1)
@@ -118,8 +118,9 @@ skeleton = NodePath("../..")
 script = ExtResource("1_4y7fx")
 NodesToOutline = NodePath("..")
 
-[node name="GraphTestNode" type="Node" parent="Node3D/OutlinerComponent"]
-script = ExtResource("2_brma8")
+[node name="OutlinerComponentDemo" type="Node" parent="Node3D/OutlinerComponent" node_paths=PackedStringArray("OutlinerComponent")]
+script = ExtResource("2_vmmf1")
+OutlinerComponent = NodePath("..")
 
 [node name="Pivot" type="Node3D" parent="."]
 
