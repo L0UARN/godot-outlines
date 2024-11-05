@@ -1,9 +1,9 @@
 using Godot;
 using Godot.Collections;
 
-namespace Outlines.Ppcs.Utils
+namespace Ppcs.Abstractions
 {
-	public class PpcsImage : IPpcsUniformable, IPpcsCleanupable
+	public class Image : IUniformable, ICleanupable
 	{
 		private readonly RenderingDevice _Rd = null;
 
@@ -52,13 +52,13 @@ namespace Outlines.Ppcs.Utils
 			}
 		}
 
-		public PpcsImage(RenderingDevice renderingDevice, Vector2I size)
+		public Image(RenderingDevice renderingDevice, Vector2I size)
 		{
 			this._Rd = renderingDevice;
 			this.Size = size;
 		}
 
-		public PpcsImage(RenderingDevice renderingDevice, Rid rid)
+		public Image(RenderingDevice renderingDevice, Rid rid)
 		{
 			this._Rd = renderingDevice;
 			this.Rid = rid;
@@ -69,7 +69,7 @@ namespace Outlines.Ppcs.Utils
 			return this._Rid;
 		}
 
-		public PpcsUniform CreateUniform(PpcsShader shader, int slot)
+		public Uniform CreateUniform(Shader shader, int slot)
 		{
 			RDUniform uniform = new()
 			{

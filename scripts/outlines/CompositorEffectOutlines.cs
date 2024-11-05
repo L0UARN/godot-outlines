@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using Godot;
-using Outlines.Ppcs.Utils;
+using Ppcs.Abstractions;
 
 namespace Outlines
 {
 	[GlobalClass]
-	public partial class CompositorEffectOutlines : CompositorEffect, IPpcsCleanupable
+	public partial class CompositorEffectOutlines : CompositorEffect, ICleanupable
 	{
 		private int _OutlinesSize = 4;
 		[Export]

@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 
-namespace Outlines.Ppcs.Utils
+namespace Ppcs.Abstractions
 {
-	public class PpcsShader : IPpcsCleanupable
+	public class Shader : ICleanupable
 	{
 		private RenderingDevice _Rd = null;
 
@@ -30,27 +30,27 @@ namespace Outlines.Ppcs.Utils
 
 				this.Cleanup();
 
-				this.Rid = PpcsShaderPool.GetOrCreateShaderRid(this._Rd, value);
-				PpcsShaderPool.HoldShader(value);
+				this.Rid = ShaderPool.GetOrCreateShaderRid(this._Rd, value);
+				ShaderPool.HoldShader(value);
 				this._PipelineRid = this._Rd.ComputePipelineCreate(this.Rid);
 
 				this._ShaderPath = value;
 			}
 		}
 
-		public PpcsShader(RenderingDevice renderingDevice, StringName shaderPath)
+		public Shader(RenderingDevice renderingDevice, StringName shaderPath)
 		{
 			this._Rd = renderingDevice;
 			this.ShaderPath = shaderPath;
 		}
 
-		private readonly Dictionary<int, PpcsUniform> _Uniforms = new();
+		private readonly Dictionary<int, Uniform> _Uniforms = new();
 
-		public void BindUniform(IPpcsUniformable uniformable, int slot)
+		public void BindUniform(IUniformable uniformable, int slot)
 		{
 			if (this._Uniforms.ContainsKey(slot))
 			{
-				PpcsUniform previous = this._Uniforms[slot];
+				Uniform previous = this._Uniforms[slot];
 
 				if (previous.UniformableRid.Equals(uniformable.GetUniformableRid()))
 				{
@@ -79,7 +79,7 @@ namespace Outlines.Ppcs.Utils
 			long computeList = this._Rd.ComputeListBegin();
 			this._Rd.ComputeListBindComputePipeline(computeList, this._PipelineRid);
 
-			foreach (KeyValuePair<int, PpcsUniform> uniform in this._Uniforms)
+			foreach (KeyValuePair<int, Uniform> uniform in this._Uniforms)
 			{
 				this._Rd.ComputeListBindUniformSet(computeList, uniform.Value.Rid, (uint)uniform.Key);
 			}
@@ -93,7 +93,7 @@ namespace Outlines.Ppcs.Utils
 
 		public void Cleanup()
 		{
-			foreach (PpcsUniform uniform in this._Uniforms.Values)
+			foreach (Uniform uniform in this._Uniforms.Values)
 			{
 				uniform.Cleanup();
 			}
@@ -109,7 +109,7 @@ namespace Outlines.Ppcs.Utils
 
 			if (this.ShaderPath != null)
 			{
-				PpcsShaderPool.ReleaseShader(this._Rd, this._ShaderPath);
+				ShaderPool.ReleaseShader(this._Rd, this._ShaderPath);
 			}
 
 			this.Rid = new();

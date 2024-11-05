@@ -1,13 +1,13 @@
-using Outlines.Ppcs.Utils;
+using Ppcs.Abstractions;
 
-namespace Outlines.Ppcs.Structs
+namespace Ppcs.Graph
 {
-	public class PpcsGraphBufferBinding
+	public class GraphBufferBinding
 	{
-		public PpcsShader Shader { get; private set; } = null;
+		public Shader Shader { get; private set; } = null;
 		public int Slot { get; private set; } = 0;
 
-		public PpcsGraphBufferBinding(PpcsShader shader, int slot)
+		public GraphBufferBinding(Shader shader, int slot)
 		{
 			this.Shader = shader;
 			this.Slot = slot;
@@ -20,7 +20,7 @@ namespace Outlines.Ppcs.Structs
 				return false;
 			}
 
-			if (obj is PpcsGraphBufferBinding other)
+			if (obj is GraphBufferBinding other)
 			{
 				if (!other.Slot.Equals(this.Slot))
 				{

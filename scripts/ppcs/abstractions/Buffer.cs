@@ -1,9 +1,9 @@
 using Godot;
 using Godot.Collections;
 
-namespace Outlines.Ppcs.Utils
+namespace Ppcs.Abstractions
 {
-	public class PpcsBuffer : IPpcsUniformable, IPpcsCleanupable
+	public class Buffer : IUniformable, ICleanupable
 	{
 		private readonly RenderingDevice _Rd = null;
 		public Rid Rid { get; private set; } = new();
@@ -38,7 +38,7 @@ namespace Outlines.Ppcs.Utils
 			}
 		}
 
-		public PpcsBuffer(RenderingDevice renderingDevice, byte[] data)
+		public Buffer(RenderingDevice renderingDevice, byte[] data)
 		{
 			this._Rd = renderingDevice;
 			this.Data = data;
@@ -49,7 +49,7 @@ namespace Outlines.Ppcs.Utils
 			return this.Rid;
 		}
 
-		public PpcsUniform CreateUniform(PpcsShader shader, int slot)
+		public Uniform CreateUniform(Shader shader, int slot)
 		{
 			RDUniform uniform = new()
 			{

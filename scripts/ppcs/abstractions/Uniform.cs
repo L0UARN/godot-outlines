@@ -1,14 +1,14 @@
 using Godot;
 
-namespace Outlines.Ppcs.Utils
+namespace Ppcs.Abstractions
 {
-	public class PpcsUniform : IPpcsCleanupable
+	public class Uniform : ICleanupable
 	{
 		private readonly RenderingDevice _Rd = null;
 		public Rid Rid { get; private set; } = new();
 		public Rid UniformableRid { get; private set; } = new();
 
-		public PpcsUniform(RenderingDevice renderingDevice, Rid uniformRid, Rid uniformableRid)
+		public Uniform(RenderingDevice renderingDevice, Rid uniformRid, Rid uniformableRid)
 		{
 			this._Rd = renderingDevice;
 			this.Rid = uniformRid;
