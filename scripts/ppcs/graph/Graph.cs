@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Godot;
 using Ppcs.Abstractions;
@@ -33,14 +34,38 @@ namespace Ppcs.Graph
 
 		public void CreateArcFromShaderToShader(Abstractions.Shader fromShader, int fromShaderSlot, Abstractions.Shader toShader, int toShaderSlot)
 		{
-			// TODO: check if adding this arc would make the graph cyclic, and throw an exception if so
-
 			if (!this._ShaderGraph.ContainsKey(fromShader))
 			{
 				this._ShaderGraph[fromShader] = new(1);
 			}
 
-			this._ShaderGraph[fromShader].Add(new(fromShaderSlot, toShader, toShaderSlot));
+			GraphArcFromShaderToShader newArc = new(fromShaderSlot, toShader, toShaderSlot);
+			this._ShaderGraph[fromShader].Add(newArc);
+
+			// Check if creating the arc has created a cycle in the graph
+			Stack<Abstractions.Shader> toVisit = new();
+			toVisit.Push(fromShader);
+
+			while (toVisit.Count > 0)
+			{
+				Abstractions.Shader justVisited = toVisit.Pop();
+
+				if (!this._ShaderGraph.ContainsKey(justVisited))
+				{
+					continue;
+				}
+
+				foreach (GraphArcFromShaderToShader arc in this._ShaderGraph[justVisited])
+				{
+					if (arc.ToShader.Equals(fromShader))
+					{
+						this._ShaderGraph[fromShader].Remove(newArc);
+						throw new Exception("Creating this arc would create a cycle in the graph.");
+					}
+
+					toVisit.Push(arc.ToShader);
+				}
+			}
 		}
 
 		public void CreateArcFromShaderToOutput(Abstractions.Shader fromShader, int fromShaderSlot, Abstractions.Image toOutput)
