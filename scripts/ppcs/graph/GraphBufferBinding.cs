@@ -42,7 +42,7 @@ namespace Ppcs.Graph
 
 		public override int GetHashCode()
 		{
-			return (this.Shader, this.Slot).GetHashCode();
+			return System.HashCode.Combine(Shader, Slot);
 		}
 	}
 }

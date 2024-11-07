@@ -13,7 +13,47 @@ namespace Ppcs.Graph
 		private readonly Dictionary<Abstractions.Shader, HashSet<GraphArcFromShaderToShader>> _ShaderGraph = new();
 		private readonly Dictionary<Abstractions.Shader, HashSet<GraphArcFromShaderToOutput>> _OutputGraph = new();
 
-		private Vector2I _BufferSize = Vector2I.Zero;
+		private Vector2I _ProcessingSize = Vector2I.Zero;
+		public Vector2I ProcessingSize
+		{
+			get => this._ProcessingSize;
+			set
+			{
+				if (this._ProcessingSize.Equals(value))
+				{
+					return;
+				}
+
+				if (value.X <= 0 || value.Y <= 0)
+				{
+					throw new Exception("A graph's processing size can't be less than zero.");
+				}
+
+				if (!this.IsBuilt())
+				{
+					this._ProcessingSize = value;
+					return;
+				}
+
+				foreach (KeyValuePair<Abstractions.Image, HashSet<GraphBufferBinding>> buffer in this._BufferBindings)
+				{
+					foreach (GraphBufferBinding binding in buffer.Value)
+					{
+						binding.Shader.UnbindUniform(binding.Slot);
+					}
+
+					buffer.Key.Size = value;
+
+					foreach (GraphBufferBinding binding in buffer.Value)
+					{
+						binding.Shader.BindUniform(buffer.Key, binding.Slot);
+					}
+				}
+
+				this._ProcessingSize = value;
+			}
+		}
+
 		private readonly Dictionary<Abstractions.Image, HashSet<GraphBufferBinding>> _BufferBindings = new();
 		private readonly List<Abstractions.Shader> _Pipeline = new();
 
@@ -78,45 +118,9 @@ namespace Ppcs.Graph
 			this._OutputGraph[fromShader].Add(new(fromShaderSlot, toOutput));
 		}
 
-		public void SetProcessingSize(Vector2I processingSize)
-		{
-			if (this._BufferSize.Equals(processingSize))
-			{
-				return;
-			}
-
-			if (processingSize.X <= 0 || processingSize.Y <= 0)
-			{
-				throw new Exception("A graph's processing size can't be less than zero.");
-			}
-
-			if (!this.IsBuilt())
-			{
-				this._BufferSize = processingSize;
-				return;
-			}
-
-			foreach (KeyValuePair<Abstractions.Image, HashSet<GraphBufferBinding>> buffer in this._BufferBindings)
-			{
-				foreach (GraphBufferBinding binding in buffer.Value)
-				{
-					binding.Shader.UnbindUniform(binding.Slot);
-				}
-
-				buffer.Key.Size = processingSize;
-
-				foreach (GraphBufferBinding binding in buffer.Value)
-				{
-					binding.Shader.BindUniform(buffer.Key, binding.Slot);
-				}
-			}
-
-			this._BufferSize = processingSize;
-		}
-
 		public void Build()
 		{
-			if (this._BufferSize.Equals(Vector2I.Zero))
+			if (this._ProcessingSize.Equals(Vector2I.Zero))
 			{
 				throw new Exception("Can't build the graph before having set the processing size.");
 			}
@@ -169,7 +173,7 @@ namespace Ppcs.Graph
 						}
 						else
 						{
-							buffer = new(this._Rd, this._BufferSize);
+							buffer = new(this._Rd, this._ProcessingSize);
 							outputBuffers[bufferBinding] = buffer;
 						}
 
@@ -220,7 +224,7 @@ namespace Ppcs.Graph
 		{
 			foreach (Abstractions.Shader step in this._Pipeline)
 			{
-				step.Run(this._BufferSize);
+				step.Run(this._ProcessingSize);
 			}
 		}
 
