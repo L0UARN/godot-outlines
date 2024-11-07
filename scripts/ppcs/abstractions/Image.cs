@@ -11,7 +11,7 @@ namespace Ppcs.Abstractions
 		public Vector2I Size
 		{
 			get => this._Size;
-			private set
+			set
 			{
 				if (value.Equals(this._Size))
 				{
@@ -37,7 +37,7 @@ namespace Ppcs.Abstractions
 		public Rid Rid
 		{
 			get => this._Rid;
-			private set
+			set
 			{
 				if (value.Equals(this._Rid))
 				{

@@ -14,7 +14,7 @@ namespace Ppcs.Graph
 		private readonly Dictionary<Abstractions.Shader, HashSet<GraphArcFromShaderToOutput>> _OutputGraph = new();
 
 		private Vector2I _BufferSize = Vector2I.Zero;
-		private readonly Dictionary<GraphBufferBinding, Abstractions.Image> _BoundBuffers = new();
+		private readonly Dictionary<Abstractions.Image, HashSet<GraphBufferBinding>> _BufferBindings = new();
 		private readonly List<Abstractions.Shader> _Pipeline = new();
 
 		public Graph(RenderingDevice renderingDevice)
@@ -78,28 +78,47 @@ namespace Ppcs.Graph
 			this._OutputGraph[fromShader].Add(new(fromShaderSlot, toOutput));
 		}
 
+		public void SetProcessingSize(Vector2I processingSize)
+		{
+			if (this._BufferSize.Equals(processingSize))
+			{
+				return;
+			}
+
+			if (processingSize.X <= 0 || processingSize.Y <= 0)
+			{
+				throw new Exception("A graph's processing size can't be less than zero.");
+			}
+
+			if (!this.IsBuilt())
+			{
+				this._BufferSize = processingSize;
+				return;
+			}
+
+			foreach (KeyValuePair<Abstractions.Image, HashSet<GraphBufferBinding>> buffer in this._BufferBindings)
+			{
+				foreach (GraphBufferBinding binding in buffer.Value)
+				{
+					binding.Shader.UnbindUniform(binding.Slot);
+				}
+
+				buffer.Key.Size = processingSize;
+
+				foreach (GraphBufferBinding binding in buffer.Value)
+				{
+					binding.Shader.BindUniform(buffer.Key, binding.Slot);
+				}
+			}
+
+			this._BufferSize = processingSize;
+		}
+
 		public void Build()
 		{
-			// The image buffers must be large enough to process all of the input images
-			this._BufferSize = Vector2I.Zero;
-
-			foreach (Abstractions.Image inputImage in this._InputGraph.Keys)
+			if (this._BufferSize.Equals(Vector2I.Zero))
 			{
-				if (this._BufferSize.Equals(Vector2I.Zero))
-				{
-					this._BufferSize = inputImage.Size;
-					continue;
-				}
-
-				if (inputImage.Size.X > this._BufferSize.X)
-				{
-					this._BufferSize.X = inputImage.Size.X;
-				}
-
-				if (inputImage.Size.Y > this._BufferSize.Y)
-				{
-					this._BufferSize.Y = inputImage.Size.Y;
-				}
+				throw new Exception("Can't build the graph before having set the processing size.");
 			}
 
 			Queue<Abstractions.Shader> toVisit = new();
@@ -112,6 +131,9 @@ namespace Ppcs.Graph
 					toVisit.Enqueue(arcDestination.ToShader);
 				}
 			}
+
+			// Store the buffers that are written by a shader, so that multiple shaders can read from the same output without creating multiple buffers
+			Dictionary<GraphBufferBinding, Abstractions.Image> outputBuffers = new();
 
 			while (toVisit.Count > 0)
 			{
@@ -137,22 +159,31 @@ namespace Ppcs.Graph
 							pipelineInsertIndex = toShaderIndex;
 						}
 
-						// Bind the output of `justVisited` to the input of the shader that depends on it
+						// Find out if creating a new buffer is needed, or if there's already one for this output
 						Abstractions.Image buffer = null;
 						GraphBufferBinding bufferBinding = new(justVisited, shaderArc.FromShaderSlot);
 
-						if (this._BoundBuffers.ContainsKey(bufferBinding))
+						if (outputBuffers.ContainsKey(bufferBinding))
 						{
-							buffer = this._BoundBuffers[bufferBinding];
+							buffer = outputBuffers[bufferBinding];
 						}
 						else
 						{
 							buffer = new(this._Rd, this._BufferSize);
-							this._BoundBuffers[bufferBinding] = buffer;
+							outputBuffers[bufferBinding] = buffer;
 						}
 
+						if (!this._BufferBindings.ContainsKey(buffer))
+						{
+							this._BufferBindings[buffer] = new(2);
+						}
+
+						// Bind the output of `justVisited` to the input of the shader that depends on it
 						justVisited.BindUniform(buffer, shaderArc.FromShaderSlot);
+						this._BufferBindings[buffer].Add(new(justVisited, shaderArc.FromShaderSlot));
+						// Bind the input of the shader that depends on `justVisited`
 						shaderArc.ToShader.BindUniform(buffer, shaderArc.ToShaderSlot);
+						this._BufferBindings[buffer].Add(new(shaderArc.ToShader, shaderArc.ToShaderSlot));
 					}
 				}
 
@@ -180,6 +211,11 @@ namespace Ppcs.Graph
 			}
 		}
 
+		public bool IsBuilt()
+		{
+			return this._Pipeline.Count > 0;
+		}
+
 		public void Run()
 		{
 			foreach (Abstractions.Shader step in this._Pipeline)
@@ -198,15 +234,6 @@ namespace Ppcs.Graph
 				}
 			}
 
-			foreach (KeyValuePair<Abstractions.Shader, HashSet<GraphArcFromShaderToShader>> shaderArc in this._ShaderGraph)
-			{
-				foreach (GraphArcFromShaderToShader arcData in shaderArc.Value)
-				{
-					shaderArc.Key.UnbindUniform(arcData.FromShaderSlot);
-					arcData.ToShader.UnbindUniform(arcData.ToShaderSlot);
-				}
-			}
-
 			foreach (KeyValuePair<Abstractions.Shader, HashSet<GraphArcFromShaderToOutput>> outputArc in this._OutputGraph)
 			{
 				foreach (GraphArcFromShaderToOutput arcData in outputArc.Value)
@@ -215,12 +242,17 @@ namespace Ppcs.Graph
 				}
 			}
 
-			foreach (KeyValuePair<GraphBufferBinding, Abstractions.Image> boundBuffer in this._BoundBuffers)
+			foreach (KeyValuePair<Abstractions.Image, HashSet<GraphBufferBinding>> buffer in this._BufferBindings)
 			{
-				boundBuffer.Value.Cleanup();
+				foreach (GraphBufferBinding binding in buffer.Value)
+				{
+					binding.Shader.UnbindUniform(binding.Slot);
+				}
+
+				buffer.Key.Cleanup();
 			}
 
-			this._BoundBuffers.Clear();
+			this._BufferBindings.Clear();
 			this._Pipeline.Clear();
 		}
 	}
