@@ -7,10 +7,19 @@ namespace Ppcs.Abstractions
 	{
 		private readonly RenderingDevice _Rd = null;
 
-		private Vector2I _Size = Vector2I.Zero;
+		private Vector2I _Size = Vector2I.MinValue;
 		public Vector2I Size
 		{
-			get => this._Size;
+			get
+			{
+				if (this._Size.Equals(Vector2I.MinValue))
+				{
+					RDTextureFormat format = this._Rd.TextureGetFormat(this._Rid);
+					this._Size = new((int)format.Width, (int)format.Height);
+				}
+
+				return this._Size;
+			}
 			set
 			{
 				if (value.Equals(this._Size))
@@ -46,8 +55,7 @@ namespace Ppcs.Abstractions
 
 				this.Cleanup();
 
-				RDTextureFormat format = this._Rd.TextureGetFormat(value);
-				this._Size = new((int)format.Width, (int)format.Height);
+				this._Size = Vector2I.MinValue;
 				this._Rid = value;
 			}
 		}

@@ -6,42 +6,20 @@ namespace Ppcs.Abstractions
 {
 	public class Shader : ICleanupable
 	{
-		private RenderingDevice _Rd = null;
+		private readonly RenderingDevice _Rd = null;
 
+		public StringName ShaderPath { get; private set; } = null;
 		public Rid Rid { get; private set; } = new();
 		private Rid _PipelineRid = new();
-
-		private StringName _ShaderPath = null;
-		public StringName ShaderPath
-		{
-			get => this._ShaderPath;
-			private set
-			{
-				if (value == null)
-				{
-					this.Cleanup();
-					return;
-				}
-
-				if (value.Equals(this._ShaderPath))
-				{
-					return;
-				}
-
-				this.Cleanup();
-
-				this.Rid = ShaderPool.GetOrCreateShaderRid(this._Rd, value);
-				ShaderPool.HoldShader(value);
-				this._PipelineRid = this._Rd.ComputePipelineCreate(this.Rid);
-
-				this._ShaderPath = value;
-			}
-		}
 
 		public Shader(RenderingDevice renderingDevice, StringName shaderPath)
 		{
 			this._Rd = renderingDevice;
+
 			this.ShaderPath = shaderPath;
+			this.Rid = ShaderPool.GetOrCreateShaderRid(this._Rd, this.ShaderPath);
+			ShaderPool.HoldShader(this.ShaderPath);
+			this._PipelineRid = this._Rd.ComputePipelineCreate(this.Rid);
 		}
 
 		private readonly Dictionary<int, Uniform> _Uniforms = new();
@@ -74,7 +52,7 @@ namespace Ppcs.Abstractions
 			this._Uniforms.Remove(slot);
 		}
 
-		public void Run(Vector2I size)
+		public void Run(Vector2I processingSize)
 		{
 			long computeList = this._Rd.ComputeListBegin();
 			this._Rd.ComputeListBindComputePipeline(computeList, this._PipelineRid);
@@ -84,8 +62,8 @@ namespace Ppcs.Abstractions
 				this._Rd.ComputeListBindUniformSet(computeList, uniform.Value.Rid, (uint)uniform.Key);
 			}
 
-			uint runSizeX = (uint) Mathf.FloorToInt(Mathf.Min(size.X, size.X) / 8);
-			uint runSizeY = (uint) Mathf.FloorToInt(Mathf.Min(size.Y, size.Y) / 8);
+			uint runSizeX = (uint) Mathf.FloorToInt(Mathf.Min(processingSize.X, processingSize.X) / 8);
+			uint runSizeY = (uint) Mathf.FloorToInt(Mathf.Min(processingSize.Y, processingSize.Y) / 8);
 
 			this._Rd.ComputeListDispatch(computeList, runSizeX, runSizeY, 1);
 			this._Rd.ComputeListEnd();
@@ -109,17 +87,41 @@ namespace Ppcs.Abstractions
 
 			if (this.ShaderPath != null)
 			{
-				ShaderPool.ReleaseShader(this._Rd, this._ShaderPath);
+				ShaderPool.ReleaseShader(this._Rd, this.ShaderPath);
 			}
 
 			this.Rid = new();
-			this._ShaderPath = null;
+			this.ShaderPath = null;
 		}
 
-		// TODO: remove this once done debugging
-		public override string ToString()
+		public override bool Equals(object obj)
 		{
-			return this._ShaderPath.ToString().Split("/").Last();
+			if (obj == null)
+			{
+				return false;
+			}
+
+			if (obj is Shader other)
+			{
+				if (!other.Rid.Equals(this.Rid))
+				{
+					return false;
+				}
+
+				if (!other._PipelineRid.Equals(this._PipelineRid))
+				{
+					return false;
+				}
+
+				return true;
+			}
+
+			return false;
+		}
+
+		public override int GetHashCode()
+		{
+			return System.HashCode.Combine(this.Rid, this._PipelineRid);
 		}
 	}
 }

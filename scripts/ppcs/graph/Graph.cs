@@ -1,22 +1,21 @@
 using System;
 using System.Collections.Generic;
-using Godot;
 using Ppcs.Abstractions;
 
 namespace Ppcs.Graph
 {
 	public class Graph : ICleanupable
 	{
-		private readonly RenderingDevice _Rd = null;
+		private readonly Godot.RenderingDevice _Rd = null;
 
-		private readonly Dictionary<int, Abstractions.Image> _Inputs = new();
+		private readonly Dictionary<int, Image> _Inputs = new();
 		private readonly Dictionary<int, HashSet<GraphArcFromInputToShader>> _InputGraph = new();
-		private readonly Dictionary<int, Abstractions.Image> _Outputs = new();
+		private readonly Dictionary<int, Image> _Outputs = new();
 		private readonly Dictionary<int, HashSet<GraphArcFromShaderToOutput>> _OutputGraph = new();
-		private readonly Dictionary<Abstractions.Shader, HashSet<GraphArcFromShaderToShader>> _ShaderGraph = new();
+		private readonly Dictionary<Shader, HashSet<GraphArcFromShaderToShader>> _ShaderGraph = new();
 
-		private Vector2I _ProcessingSize = Vector2I.Zero;
-		public Vector2I ProcessingSize
+		private Godot.Vector2I _ProcessingSize = Godot.Vector2I.MinValue;
+		public Godot.Vector2I ProcessingSize
 		{
 			get => this._ProcessingSize;
 			set
@@ -37,7 +36,7 @@ namespace Ppcs.Graph
 					return;
 				}
 
-				foreach (KeyValuePair<Abstractions.Image, HashSet<GraphBufferBinding>> buffer in this._BufferBindings)
+				foreach (KeyValuePair<Image, HashSet<GraphBufferBinding>> buffer in this._BufferBindings)
 				{
 					foreach (GraphBufferBinding binding in buffer.Value)
 					{
@@ -56,15 +55,15 @@ namespace Ppcs.Graph
 			}
 		}
 
-		private readonly Dictionary<Abstractions.Image, HashSet<GraphBufferBinding>> _BufferBindings = new();
-		private readonly List<Abstractions.Shader> _Pipeline = new();
+		private readonly Dictionary<Image, HashSet<GraphBufferBinding>> _BufferBindings = new();
+		private readonly List<Shader> _Pipeline = new();
 
-		public Graph(RenderingDevice renderingDevice)
+		public Graph(Godot.RenderingDevice renderingDevice)
 		{
 			this._Rd = renderingDevice;
 		}
 
-		public void CreateArcFromInputToShader(int fromInput, Abstractions.Shader toShader, int toShaderSlot)
+		public void CreateArcFromInputToShader(int fromInput, Shader toShader, int toShaderSlot)
 		{
 			if (!this._InputGraph.ContainsKey(fromInput))
 			{
@@ -80,9 +79,9 @@ namespace Ppcs.Graph
 			}
 		}
 
-		public void BindInput(int input, Abstractions.Image inputImage)
+		public void BindInput(int input, Image inputImage)
 		{
-			if (this._Inputs.TryGetValue(input, out Abstractions.Image previous))
+			if (this._Inputs.TryGetValue(input, out Image previous))
 			{
 				if (previous.Equals(inputImage))
 				{
@@ -102,7 +101,7 @@ namespace Ppcs.Graph
 			}
 		}
 
-		public void CreateArcFromShaderToShader(Abstractions.Shader fromShader, int fromShaderSlot, Abstractions.Shader toShader, int toShaderSlot)
+		public void CreateArcFromShaderToShader(Shader fromShader, int fromShaderSlot, Shader toShader, int toShaderSlot)
 		{
 			if (!this._ShaderGraph.ContainsKey(fromShader))
 			{
@@ -113,12 +112,12 @@ namespace Ppcs.Graph
 			this._ShaderGraph[fromShader].Add(newArc);
 
 			// Check if creating the arc has created a cycle in the graph
-			Stack<Abstractions.Shader> toVisit = new();
+			Stack<Shader> toVisit = new();
 			toVisit.Push(fromShader);
 
 			while (toVisit.Count > 0)
 			{
-				Abstractions.Shader justVisited = toVisit.Pop();
+				Shader justVisited = toVisit.Pop();
 
 				if (!this._ShaderGraph.ContainsKey(justVisited))
 				{
@@ -138,7 +137,7 @@ namespace Ppcs.Graph
 			}
 		}
 
-		public void CreateArcFromShaderToOutput(Abstractions.Shader fromShader, int fromShaderSlot, int toOutput)
+		public void CreateArcFromShaderToOutput(Shader fromShader, int fromShaderSlot, int toOutput)
 		{
 			if (!this._OutputGraph.ContainsKey(toOutput))
 			{
@@ -154,9 +153,9 @@ namespace Ppcs.Graph
 			}
 		}
 
-		public void BindOutput(int output, Abstractions.Image outputImage)
+		public void BindOutput(int output, Image outputImage)
 		{
-			if (this._Outputs.TryGetValue(output, out Abstractions.Image previous))
+			if (this._Outputs.TryGetValue(output, out Image previous))
 			{
 				if (previous.Equals(outputImage))
 				{
@@ -178,13 +177,13 @@ namespace Ppcs.Graph
 
 		public void Build()
 		{
-			if (this._ProcessingSize.Equals(Vector2I.Zero))
+			if (this._ProcessingSize.Equals(Godot.Vector2I.MinValue))
 			{
 				throw new Exception("Can't build the graph before having set the processing size.");
 			}
 
 			// Start visiting the shader graph starting with the ones that use an input image
-			Queue<Abstractions.Shader> toVisit = new();
+			Queue<Shader> toVisit = new();
 
 			foreach (KeyValuePair<int, HashSet<GraphArcFromInputToShader>> inputArc in this._InputGraph)
 			{
@@ -195,11 +194,11 @@ namespace Ppcs.Graph
 			}
 
 			// Store the buffers that are written by a shader, so that multiple shaders can read from the same output without creating multiple buffers
-			Dictionary<GraphBufferBinding, Abstractions.Image> outputBuffers = new();
+			Dictionary<GraphBufferBinding, Image> outputBuffers = new();
 
 			while (toVisit.Count > 0)
 			{
-				Abstractions.Shader justVisited = toVisit.Dequeue();
+				Shader justVisited = toVisit.Dequeue();
 				int pipelineInsertIndex = -1;
 
 				// Explore the shaders that depend on `justVisited`
@@ -222,7 +221,7 @@ namespace Ppcs.Graph
 						}
 
 						// Find out if creating a new buffer is needed, or if there's already one for this output
-						Abstractions.Image buffer = null;
+						Image buffer = null;
 						GraphBufferBinding bufferBinding = new(justVisited, shaderArc.FromShaderSlot);
 
 						if (outputBuffers.ContainsKey(bufferBinding))
@@ -271,7 +270,7 @@ namespace Ppcs.Graph
 
 		public void Run()
 		{
-			foreach (Abstractions.Shader step in this._Pipeline)
+			foreach (Shader step in this._Pipeline)
 			{
 				step.Run(this._ProcessingSize);
 			}
@@ -295,7 +294,7 @@ namespace Ppcs.Graph
 				}
 			}
 
-			foreach (KeyValuePair<Abstractions.Image, HashSet<GraphBufferBinding>> buffer in this._BufferBindings)
+			foreach (KeyValuePair<Image, HashSet<GraphBufferBinding>> buffer in this._BufferBindings)
 			{
 				foreach (GraphBufferBinding binding in buffer.Value)
 				{

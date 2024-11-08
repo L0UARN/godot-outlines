@@ -34,15 +34,13 @@ namespace Ppcs.Graph
 
 				return true;
 			}
-			else
-			{
-				return false;
-			}
+
+			return false;
 		}
 
 		public override int GetHashCode()
 		{
-			return System.HashCode.Combine(Shader, Slot);
+			return System.HashCode.Combine(this.Shader, this.Slot);
 		}
 	}
 }

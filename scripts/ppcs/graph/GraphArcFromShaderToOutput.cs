@@ -12,5 +12,35 @@ namespace Ppcs.Graph
 			this.FromShader = fromShader;
 			this.FromShaderSlot = fromShaderSlot;
 		}
+
+		public override bool Equals(object obj)
+		{
+			if (obj == null)
+			{
+				return false;
+			}
+
+			if (obj is GraphArcFromShaderToOutput other)
+			{
+				if (!other.FromShader.Equals(this.FromShader))
+				{
+					return false;
+				}
+
+				if (!other.FromShaderSlot.Equals(this.FromShaderSlot))
+				{
+					return false;
+				}
+
+				return true;
+			}
+
+			return false;
+		}
+
+		public override int GetHashCode()
+		{
+			return System.HashCode.Combine(this.FromShader, this.FromShaderSlot);
+		}
 	}
 }

@@ -53,11 +53,12 @@ namespace Outlines
 			}
 		}
 
-		private readonly Dictionary<Rid, OutlinesGraph> _OutlinesGraphs = new();
+		private readonly OutlinesGraph _Graph = null;
 
 		public CompositorEffectOutlines() : base()
 		{
 			this.EffectCallbackType = EffectCallbackTypeEnum.PostTransparent;
+			this._Graph = new(this._OutlinesSize, this._GlowRadius);
 		}
 
 		public CompositorEffectOutlines(int outlinesSize, int glowRadius) : base()
@@ -65,6 +66,7 @@ namespace Outlines
 			this.EffectCallbackType = EffectCallbackTypeEnum.PostTransparent;
 			this._OutlinesSize = outlinesSize;
 			this._GlowRadius = glowRadius;
+			this._Graph = new(this._OutlinesSize, this._GlowRadius);
 		}
 
 		public override void _RenderCallback(int effectCallbackType, RenderData renderData)
@@ -76,24 +78,13 @@ namespace Outlines
 			for (uint i = 0; i < renderSceneBuffers.GetViewCount(); i++)
 			{
 				Rid rawImage = renderSceneBuffers.GetColorLayer(0);
-
-				if (!this._OutlinesGraphs.TryGetValue(rawImage, out OutlinesGraph outlinesGraph))
-				{
-					outlinesGraph = this._OutlinesGraphs[rawImage] = new(this._OutlinesSize, this._GlowRadius, rawImage);
-				}
-
-				outlinesGraph.Run();
+				this._Graph.Run(rawImage);
 			}
 		}
 
 		public void Cleanup()
 		{
-			foreach (OutlinesGraph outlineGraph in this._OutlinesGraphs.Values)
-			{
-				outlineGraph.Cleanup();
-			}
-
-			this._OutlinesGraphs.Clear();
+			this._Graph.Cleanup();
 		}
 
 		public override void _Notification(int what)
