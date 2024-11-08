@@ -16,6 +16,6 @@ void main() {
 		return;
 	}
 
-	vec2 normalized_current_position = vec2(current_position) / vec2(imageSize(input_image));
-	imageStore(output_image, current_position, vec4(normalized_current_position, 0.0f, 1.0f));
+	vec4 packed_position = vec4(unpackUnorm2x16(current_position.x), unpackUnorm2x16(current_position.y));
+	imageStore(output_image, current_position, packed_position);
 }
