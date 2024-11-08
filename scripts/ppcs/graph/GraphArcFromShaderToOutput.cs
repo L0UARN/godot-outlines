@@ -4,13 +4,13 @@ namespace Ppcs.Graph
 {
 	public class GraphArcFromShaderToOutput
 	{
+		public Shader FromShader { get; private set; } = null;
 		public int FromShaderSlot { get; private set; } = 0;
-		public Image ToOutput { get; private set; } = null;
 
-		public GraphArcFromShaderToOutput(int fromShaderSlot, Image toOutput)
+		public GraphArcFromShaderToOutput(Shader fromShader, int fromShaderSlot)
 		{
+			this.FromShader = fromShader;
 			this.FromShaderSlot = fromShaderSlot;
-			this.ToOutput = toOutput;
 		}
 	}
 }

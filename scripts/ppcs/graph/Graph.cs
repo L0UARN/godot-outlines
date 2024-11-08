@@ -9,9 +9,11 @@ namespace Ppcs.Graph
 	{
 		private readonly RenderingDevice _Rd = null;
 
-		private readonly Dictionary<Abstractions.Image, HashSet<GraphArcFromInputToShader>> _InputGraph = new();
+		private readonly Dictionary<int, Abstractions.Image> _Inputs = new();
+		private readonly Dictionary<int, HashSet<GraphArcFromInputToShader>> _InputGraph = new();
+		private readonly Dictionary<int, Abstractions.Image> _Outputs = new();
+		private readonly Dictionary<int, HashSet<GraphArcFromShaderToOutput>> _OutputGraph = new();
 		private readonly Dictionary<Abstractions.Shader, HashSet<GraphArcFromShaderToShader>> _ShaderGraph = new();
-		private readonly Dictionary<Abstractions.Shader, HashSet<GraphArcFromShaderToOutput>> _OutputGraph = new();
 
 		private Vector2I _ProcessingSize = Vector2I.Zero;
 		public Vector2I ProcessingSize
@@ -62,7 +64,7 @@ namespace Ppcs.Graph
 			this._Rd = renderingDevice;
 		}
 
-		public void CreateArcFromInputToShader(Abstractions.Image fromInput, Abstractions.Shader toShader, int toShaderSlot)
+		public void CreateArcFromInputToShader(int fromInput, Abstractions.Shader toShader, int toShaderSlot)
 		{
 			if (!this._InputGraph.ContainsKey(fromInput))
 			{
@@ -70,6 +72,34 @@ namespace Ppcs.Graph
 			}
 
 			this._InputGraph[fromInput].Add(new(toShader, toShaderSlot));
+
+			// Bind the image if it's already known
+			if (this._Inputs.ContainsKey(fromInput))
+			{
+				toShader.BindUniform(this._Inputs[fromInput], toShaderSlot);
+			}
+		}
+
+		public void BindInput(int input, Abstractions.Image inputImage)
+		{
+			if (this._Inputs.TryGetValue(input, out Abstractions.Image previous))
+			{
+				if (previous.Equals(inputImage))
+				{
+					return;
+				}
+			}
+
+			this._Inputs[input] = inputImage;
+
+			// Bind the new input image to all the shaders that require it
+			if (this._InputGraph.TryGetValue(input, out HashSet<GraphArcFromInputToShader> arcs))
+			{
+				foreach (GraphArcFromInputToShader arc in arcs)
+				{
+					arc.ToShader.BindUniform(inputImage, arc.ToShaderSlot);
+				}
+			}
 		}
 
 		public void CreateArcFromShaderToShader(Abstractions.Shader fromShader, int fromShaderSlot, Abstractions.Shader toShader, int toShaderSlot)
@@ -108,14 +138,42 @@ namespace Ppcs.Graph
 			}
 		}
 
-		public void CreateArcFromShaderToOutput(Abstractions.Shader fromShader, int fromShaderSlot, Abstractions.Image toOutput)
+		public void CreateArcFromShaderToOutput(Abstractions.Shader fromShader, int fromShaderSlot, int toOutput)
 		{
-			if (!this._OutputGraph.ContainsKey(fromShader))
+			if (!this._OutputGraph.ContainsKey(toOutput))
 			{
-				this._OutputGraph[fromShader] = new(1);
+				this._OutputGraph[toOutput] = new(1);
 			}
 
-			this._OutputGraph[fromShader].Add(new(fromShaderSlot, toOutput));
+			this._OutputGraph[toOutput].Add(new(fromShader, fromShaderSlot));
+
+			// Bind the image if it's already known
+			if (this._Outputs.ContainsKey(toOutput))
+			{
+				fromShader.BindUniform(this._Outputs[toOutput], fromShaderSlot);
+			}
+		}
+
+		public void BindOutput(int output, Abstractions.Image outputImage)
+		{
+			if (this._Outputs.TryGetValue(output, out Abstractions.Image previous))
+			{
+				if (previous.Equals(outputImage))
+				{
+					return;
+				}
+			}
+
+			this._Outputs[output] = outputImage;
+
+			// Bind the new output image to all the shaders that require it
+			if (this._OutputGraph.TryGetValue(output, out HashSet<GraphArcFromShaderToOutput> arcs))
+			{
+				foreach (GraphArcFromShaderToOutput arc in arcs)
+				{
+					arc.FromShader.BindUniform(outputImage, arc.FromShaderSlot);
+				}
+			}
 		}
 
 		public void Build()
@@ -125,13 +183,13 @@ namespace Ppcs.Graph
 				throw new Exception("Can't build the graph before having set the processing size.");
 			}
 
+			// Start visiting the shader graph starting with the ones that use an input image
 			Queue<Abstractions.Shader> toVisit = new();
 
-			foreach (KeyValuePair<Abstractions.Image, HashSet<GraphArcFromInputToShader>> inputArc in this._InputGraph)
+			foreach (KeyValuePair<int, HashSet<GraphArcFromInputToShader>> inputArc in this._InputGraph)
 			{
 				foreach (GraphArcFromInputToShader arcDestination in inputArc.Value)
 				{
-					arcDestination.ToShader.BindUniform(inputArc.Key, arcDestination.ToShaderSlot);
 					toVisit.Enqueue(arcDestination.ToShader);
 				}
 			}
@@ -191,15 +249,6 @@ namespace Ppcs.Graph
 					}
 				}
 
-				if (this._OutputGraph.ContainsKey(justVisited))
-				{
-					foreach (GraphArcFromShaderToOutput outputArc in this._OutputGraph[justVisited])
-					{
-						// Make it so `justVisited` outputs to the output image
-						justVisited.BindUniform(outputArc.ToOutput, outputArc.FromShaderSlot);
-					}
-				}
-
 				// Add `justVisited` at the end of the pipeline if no shaders that depends on it are already in the pipeline
 				if (pipelineInsertIndex == -1)
 				{
@@ -230,7 +279,7 @@ namespace Ppcs.Graph
 
 		public void Cleanup()
 		{
-			foreach (KeyValuePair<Abstractions.Image, HashSet<GraphArcFromInputToShader>> inputArc in this._InputGraph)
+			foreach (KeyValuePair<int, HashSet<GraphArcFromInputToShader>> inputArc in this._InputGraph)
 			{
 				foreach (GraphArcFromInputToShader arcData in inputArc.Value)
 				{
@@ -238,11 +287,11 @@ namespace Ppcs.Graph
 				}
 			}
 
-			foreach (KeyValuePair<Abstractions.Shader, HashSet<GraphArcFromShaderToOutput>> outputArc in this._OutputGraph)
+			foreach (KeyValuePair<int, HashSet<GraphArcFromShaderToOutput>> outputArc in this._OutputGraph)
 			{
 				foreach (GraphArcFromShaderToOutput arcData in outputArc.Value)
 				{
-					outputArc.Key.UnbindUniform(arcData.FromShaderSlot);
+					arcData.FromShader.UnbindUniform(arcData.FromShaderSlot);
 				}
 			}
 
