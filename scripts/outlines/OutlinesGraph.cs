@@ -52,13 +52,14 @@ namespace Outlines
 
 			Shader jfaOutlines = new(this._Rd, "res://assets/shaders/jfa_outlines.glsl");
 			this._ToCleanup.Add(jfaOutlines);
+			this._Graph.CreateArcFromShaderToShader(lastJfaStep, 1, jfaOutlines, 0);
+			this._Graph.CreateArcFromInputToShader(0, jfaOutlines, 1);
 			Buffer outlinesSizeBuffer = new(this._Rd, System.BitConverter.GetBytes(outlinesSize));
 			this._ToCleanup.Add(outlinesSizeBuffer);
-			jfaOutlines.BindUniform(outlinesSizeBuffer, 2);
-			this._Graph.CreateArcFromShaderToShader(lastJfaStep, 1, jfaOutlines, 0);
+			jfaOutlines.BindUniform(outlinesSizeBuffer, 3);
 
 			Shader lastShader = jfaOutlines;
-			int lastShaderOutputSlot = 1;
+			int lastShaderOutputSlot = 2;
 
 			if (glowRadius > 0)
 			{
@@ -70,7 +71,7 @@ namespace Outlines
 				Buffer blurDirectionBuffer1 = new(this._Rd, System.BitConverter.GetBytes(true));
 				boxBlur1.BindUniform(blurRadiusBuffer, 2);
 				boxBlur1.BindUniform(blurDirectionBuffer1, 3);
-				this._Graph.CreateArcFromShaderToShader(jfaOutlines, 1, boxBlur1, 0);
+				this._Graph.CreateArcFromShaderToShader(jfaOutlines, 2, boxBlur1, 0);
 
 				Shader boxBlur2 = new(this._Rd, "res://assets/shaders/box_blur.glsl");
 				this._ToCleanup.Add(boxBlur2);

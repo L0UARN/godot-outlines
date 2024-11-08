@@ -183,13 +183,13 @@ namespace Ppcs.Graph
 			}
 
 			// Start visiting the shader graph starting with the ones that use an input image
-			Queue<Shader> toVisit = new();
+			Stack<Shader> toVisit = new();
 
 			foreach (KeyValuePair<int, HashSet<GraphArcFromInputToShader>> inputArc in this._InputGraph)
 			{
 				foreach (GraphArcFromInputToShader arcDestination in inputArc.Value)
 				{
-					toVisit.Enqueue(arcDestination.ToShader);
+					toVisit.Push(arcDestination.ToShader);
 				}
 			}
 
@@ -198,7 +198,7 @@ namespace Ppcs.Graph
 
 			while (toVisit.Count > 0)
 			{
-				Shader justVisited = toVisit.Dequeue();
+				Shader justVisited = toVisit.Pop();
 				int pipelineInsertIndex = -1;
 
 				// Explore the shaders that depend on `justVisited`
@@ -211,7 +211,7 @@ namespace Ppcs.Graph
 						// No need to visit a shader that has already been visited
 						if (toShaderIndex == -1)
 						{
-							toVisit.Enqueue(shaderArc.ToShader);
+							toVisit.Push(shaderArc.ToShader);
 						}
 
 						// If the shader that depends on `justVisited` is before `justVisited` in the pipeline, then make it so `justVisited` is inserted before it
@@ -248,6 +248,8 @@ namespace Ppcs.Graph
 					}
 				}
 
+				// TODO: fix the way the pipeline is built (it's completely wrong)
+
 				// Add `justVisited` at the end of the pipeline if no shaders that depends on it are already in the pipeline
 				if (pipelineInsertIndex == -1)
 				{
@@ -260,6 +262,12 @@ namespace Ppcs.Graph
 					this._Pipeline.Remove(justVisited);
 					this._Pipeline.Insert(pipelineInsertIndex, justVisited);
 				}
+			}
+
+			Godot.GD.Print("Pipeline:");
+			foreach (Shader shader in this._Pipeline)
+			{
+				Godot.GD.Print($"-> {shader}");
 			}
 		}
 

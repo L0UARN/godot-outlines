@@ -119,6 +119,11 @@ namespace Ppcs.Abstractions
 			return false;
 		}
 
+		public override string ToString()
+		{
+			return this.ShaderPath.ToString().Split("/").Last();
+		}
+
 		public override int GetHashCode()
 		{
 			return System.HashCode.Combine(this.Rid, this._PipelineRid);
