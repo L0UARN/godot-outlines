@@ -36,26 +36,28 @@ namespace Ppcs.Graph
 					return;
 				}
 
-				foreach (KeyValuePair<Image, HashSet<GraphBufferBinding>> buffer in this._BufferBindings)
+				// Unbind all the shaders
+				foreach (GraphBufferBinding binding in this._NewBufferBindings.Keys)
 				{
-					foreach (GraphBufferBinding binding in buffer.Value)
-					{
-						binding.Shader.UnbindUniform(binding.Slot);
-					}
-
-					buffer.Key.Size = value;
-
-					foreach (GraphBufferBinding binding in buffer.Value)
-					{
-						binding.Shader.BindUniform(buffer.Key, binding.Slot);
-					}
+					binding.Shader.UnbindUniform(binding.Slot);
 				}
 
+				// Resize each buffer and rebind them
+				foreach (KeyValuePair<GraphBufferBinding, Image> binding in this._NewBufferBindings)
+				{
+					// If multiple shaders are bound to this buffer, the size will be set multiple times
+					// But since there's a check that prevents from resizing to the same size, it's fine
+					binding.Value.Size = value;
+					binding.Key.Shader.BindUniform(binding.Value, binding.Key.Slot);
+				}
+
+				Godot.GD.Print("Resize");
 				this._ProcessingSize = value;
 			}
 		}
 
-		private readonly Dictionary<Image, HashSet<GraphBufferBinding>> _BufferBindings = new();
+		private readonly Dictionary<GraphBufferBinding, Image> _NewBufferBindings = new();
+		// private readonly Dictionary<Image, HashSet<GraphBufferBinding>> _BufferBindings = new();
 		private readonly List<Shader> _Pipeline = new();
 
 		public Graph(Godot.RenderingDevice renderingDevice)
@@ -175,6 +177,67 @@ namespace Ppcs.Graph
 			}
 		}
 
+		private Dictionary<Shader, HashSet<Shader>> GetReversedShaderGraph()
+		{
+			Dictionary<Shader, HashSet<Shader>> result = new();
+
+			foreach (KeyValuePair<Shader, HashSet<GraphArcFromShaderToShader>> arcs in this._ShaderGraph)
+			{
+				foreach (GraphArcFromShaderToShader arc in arcs.Value)
+				{
+					if (!result.ContainsKey(arc.ToShader))
+					{
+						result[arc.ToShader] = new(1);
+					}
+
+					result[arc.ToShader].Add(arcs.Key);
+				}
+			}
+
+			return result;
+		}
+
+		private Stack<Shader> GetStartingShadersToVisit(Dictionary<Shader, HashSet<Shader>> reversedShaderGraph)
+		{
+			Stack<Shader> result = new();
+
+			foreach (KeyValuePair<int, HashSet<GraphArcFromInputToShader>> arcs in this._InputGraph)
+			{
+				foreach (GraphArcFromInputToShader arc in arcs.Value)
+				{
+					if (!reversedShaderGraph.ContainsKey(arc.ToShader))
+					{
+						result.Push(arc.ToShader);
+					}
+				}
+			}
+
+			return result;
+		}
+
+		private void BindShadersWithBuffer(Shader fromShader, int fromShaderSlot, Shader toShader, int toShaderSlot)
+		{
+			// Find out if creating a new buffer is needed, or if there's already one for this output
+			Image buffer = null;
+			GraphBufferBinding fromBinding = new(fromShader, fromShaderSlot);
+
+			if (this._NewBufferBindings.ContainsKey(fromBinding))
+			{
+				buffer = this._NewBufferBindings[fromBinding];
+			}
+			else
+			{
+				buffer = new(this._Rd, this._ProcessingSize);
+				this._NewBufferBindings[fromBinding] = buffer;
+			}
+
+			// Bind the output of `justVisited` to the input of the shader that depends on it
+			fromShader.BindUniform(buffer, fromShaderSlot);
+			// Bind the input of the shader that depends on `justVisited`
+			toShader.BindUniform(buffer, toShaderSlot);
+			this._NewBufferBindings[new(toShader, toShaderSlot)] = buffer;
+		}
+
 		public void Build()
 		{
 			if (this._ProcessingSize.Equals(Godot.Vector2I.MinValue))
@@ -182,85 +245,70 @@ namespace Ppcs.Graph
 				throw new Exception("Can't build the graph before having set the processing size.");
 			}
 
+			// this._ShaderGraph contains all the shaders that are dependent on one shader
+			// reversedShaderGraph contains all the shader that one shader is dependent on
+			Dictionary<Shader, HashSet<Shader>> reversedShaderGraph = this.GetReversedShaderGraph();
 			// Start visiting the shader graph starting with the ones that use an input image
-			Stack<Shader> toVisit = new();
-
-			foreach (KeyValuePair<int, HashSet<GraphArcFromInputToShader>> inputArc in this._InputGraph)
-			{
-				foreach (GraphArcFromInputToShader arcDestination in inputArc.Value)
-				{
-					toVisit.Push(arcDestination.ToShader);
-				}
-			}
-
-			// Store the buffers that are written by a shader, so that multiple shaders can read from the same output without creating multiple buffers
-			Dictionary<GraphBufferBinding, Image> outputBuffers = new();
+			Stack<Shader> toVisit = this.GetStartingShadersToVisit(reversedShaderGraph);
 
 			while (toVisit.Count > 0)
 			{
 				Shader justVisited = toVisit.Pop();
-				int pipelineInsertIndex = -1;
+				// These indices are needed to know where in the pipeline to insert the current shader
+				int firstDependentIndex = -1;
+				int lastDependencyIndex = -1;
 
 				// Explore the shaders that depend on `justVisited`
 				if (this._ShaderGraph.ContainsKey(justVisited))
 				{
-					foreach (GraphArcFromShaderToShader shaderArc in this._ShaderGraph[justVisited])
+					foreach (GraphArcFromShaderToShader arcs in this._ShaderGraph[justVisited])
 					{
-						int toShaderIndex = this._Pipeline.IndexOf(shaderArc.ToShader);
+						int dependentShaderIndex = this._Pipeline.IndexOf(arcs.ToShader);
 
-						// No need to visit a shader that has already been visited
-						if (toShaderIndex == -1)
+						// Visit the shader that depends on `justVisited` (only if it has not been visited before)
+						if (dependentShaderIndex == -1)
 						{
-							toVisit.Push(shaderArc.ToShader);
+							toVisit.Push(arcs.ToShader);
 						}
 
-						// If the shader that depends on `justVisited` is before `justVisited` in the pipeline, then make it so `justVisited` is inserted before it
-						if (pipelineInsertIndex == -1 || (toShaderIndex != -1 && toShaderIndex < pipelineInsertIndex))
+						// Register the index of the dependent shader
+						if (firstDependentIndex == -1 || (dependentShaderIndex != -1 && dependentShaderIndex < firstDependentIndex))
 						{
-							pipelineInsertIndex = toShaderIndex;
+							firstDependentIndex = dependentShaderIndex;
 						}
 
-						// Find out if creating a new buffer is needed, or if there's already one for this output
-						Image buffer = null;
-						GraphBufferBinding bufferBinding = new(justVisited, shaderArc.FromShaderSlot);
-
-						if (outputBuffers.ContainsKey(bufferBinding))
-						{
-							buffer = outputBuffers[bufferBinding];
-						}
-						else
-						{
-							buffer = new(this._Rd, this._ProcessingSize);
-							outputBuffers[bufferBinding] = buffer;
-						}
-
-						if (!this._BufferBindings.ContainsKey(buffer))
-						{
-							this._BufferBindings[buffer] = new(2);
-						}
-
-						// Bind the output of `justVisited` to the input of the shader that depends on it
-						justVisited.BindUniform(buffer, shaderArc.FromShaderSlot);
-						this._BufferBindings[buffer].Add(new(justVisited, shaderArc.FromShaderSlot));
-						// Bind the input of the shader that depends on `justVisited`
-						shaderArc.ToShader.BindUniform(buffer, shaderArc.ToShaderSlot);
-						this._BufferBindings[buffer].Add(new(shaderArc.ToShader, shaderArc.ToShaderSlot));
+						this.BindShadersWithBuffer(justVisited, arcs.FromShaderSlot, arcs.ToShader, arcs.ToShaderSlot);
 					}
 				}
 
-				// TODO: fix the way the pipeline is built (it's completely wrong)
-
-				// Add `justVisited` at the end of the pipeline if no shaders that depends on it are already in the pipeline
-				if (pipelineInsertIndex == -1)
+				if (reversedShaderGraph.ContainsKey(justVisited))
 				{
-					this._Pipeline.Remove(justVisited);
+					foreach (Shader dependency in reversedShaderGraph[justVisited])
+					{
+						int dependencyIndex = this._Pipeline.IndexOf(dependency);
+
+						// Register the index of the dependency
+						if (lastDependencyIndex == -1 || (dependencyIndex != -1 && dependencyIndex > lastDependencyIndex))
+						{
+							lastDependencyIndex = dependencyIndex;
+						}
+					}
+				}
+
+				// Add `justVisited` at the end of the pipeline if no shaders none of its dependencies or dependents are in the pipeline
+				if (firstDependentIndex == -1 && lastDependencyIndex == -1)
+				{
 					this._Pipeline.Add(justVisited);
 				}
-				// Insert it before the shaders that need it if there are any
-				else
+				// Insert `justVisited` before the first shader that depends on it
+				else if (firstDependentIndex != -1)
 				{
-					this._Pipeline.Remove(justVisited);
-					this._Pipeline.Insert(pipelineInsertIndex, justVisited);
+					this._Pipeline.Insert(firstDependentIndex, justVisited);
+				}
+				// Insert `justVisisted` after the last shader that depends on it
+				else if (lastDependencyIndex != -1)
+				{
+					this._Pipeline.Insert(lastDependencyIndex + 1, justVisited);
 				}
 			}
 
@@ -302,17 +350,19 @@ namespace Ppcs.Graph
 				}
 			}
 
-			foreach (KeyValuePair<Image, HashSet<GraphBufferBinding>> buffer in this._BufferBindings)
+			// Unbind all the buffers from the shaders before cleaning up the buffers
+			// This way there are no invalid uniforms at any point
+			foreach (GraphBufferBinding binding in this._NewBufferBindings.Keys)
 			{
-				foreach (GraphBufferBinding binding in buffer.Value)
-				{
-					binding.Shader.UnbindUniform(binding.Slot);
-				}
-
-				buffer.Key.Cleanup();
+				binding.Shader.UnbindUniform(binding.Slot);
 			}
 
-			this._BufferBindings.Clear();
+			foreach (Image buffer in this._NewBufferBindings.Values)
+			{
+				buffer.Cleanup();
+			}
+
+			this._NewBufferBindings.Clear();
 			this._Pipeline.Clear();
 		}
 	}
