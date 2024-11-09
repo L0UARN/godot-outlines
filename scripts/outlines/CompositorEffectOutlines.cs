@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 using Ppcs.Interfaces;
 
@@ -24,8 +25,13 @@ namespace Outlines
 					return;
 				}
 
+				for (int i = 0; i < this._Graphs.Count; i++)
+				{
+					this._Graphs[i].Cleanup();
+					this._Graphs[i] = new(value, this._GlowRadius);
+				}
+
 				this._OutlinesSize = value;
-				// TODO: rebuild the graph accounting for the new outlines size
 			}
 		}
 
@@ -47,17 +53,21 @@ namespace Outlines
 					return;
 				}
 
+				for (int i = 0; i < this._Graphs.Count; i++)
+				{
+					this._Graphs[i].Cleanup();
+					this._Graphs[i] = new(this._OutlinesSize, value);
+				}
+
 				this._GlowRadius = value;
-				// TODO: rebuild the graph accounting for the new glow radius
 			}
 		}
 
-		private readonly OutlinesGraph _Graph = null;
+		private readonly List<OutlinesGraph> _Graphs = new(1);
 
 		public CompositorEffectOutlines() : base()
 		{
 			this.EffectCallbackType = EffectCallbackTypeEnum.PostTransparent;
-			this._Graph = new(this._OutlinesSize, this._GlowRadius);
 		}
 
 		public CompositorEffectOutlines(int outlinesSize, int glowRadius) : base()
@@ -65,7 +75,6 @@ namespace Outlines
 			this.EffectCallbackType = EffectCallbackTypeEnum.PostTransparent;
 			this._OutlinesSize = outlinesSize;
 			this._GlowRadius = glowRadius;
-			this._Graph = new(this._OutlinesSize, this._GlowRadius);
 		}
 
 		public override void _RenderCallback(int effectCallbackType, RenderData renderData)
@@ -73,17 +82,39 @@ namespace Outlines
 			base._RenderCallback(effectCallbackType, renderData);
 
 			RenderSceneBuffersRD renderSceneBuffers = (RenderSceneBuffersRD)renderData.GetRenderSceneBuffers();
+			uint viewCount = renderSceneBuffers.GetViewCount();
 
-			for (uint i = 0; i < renderSceneBuffers.GetViewCount(); i++)
+			if (this._Graphs.Count < viewCount)
 			{
-				Rid rawImage = renderSceneBuffers.GetColorLayer(0);
-				this._Graph.Run(rawImage);
+				for (int i = 0; i < viewCount - this._Graphs.Count; i++)
+				{
+					this._Graphs.Add(new(this._OutlinesSize, this._GlowRadius));
+				}
+			}
+			else if (this._Graphs.Count > viewCount)
+			{
+				for (int i = (int)viewCount; i != this._Graphs.Count; )
+				{
+					this._Graphs[i].Cleanup();
+					this._Graphs.RemoveAt(i);
+				}
+			}
+
+			for (uint i = 0; i < viewCount; i++)
+			{
+				Rid rawImage = renderSceneBuffers.GetColorLayer(i);
+				this._Graphs[(int)i].Run(rawImage);
 			}
 		}
 
 		public void Cleanup()
 		{
-			this._Graph.Cleanup();
+			foreach (OutlinesGraph graph in this._Graphs)
+			{
+				graph.Cleanup();
+			}
+
+			this._Graphs.Clear();
 		}
 
 		public override void _Notification(int what)

@@ -10,7 +10,7 @@ OutlinesCaptureViewport = NodePath("../CaptureViewport")
 OutlinesCaptureCamera = NodePath("../CaptureViewport/CaptureCamera")
 OutlinesDisplayRect = NodePath("../DisplayRect")
 OutlinesSize = 8
-GlowRadius = 4
+GlowRadius = 0
 
 [node name="CaptureViewport" type="SubViewport" parent="."]
 
