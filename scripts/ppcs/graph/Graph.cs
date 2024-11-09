@@ -77,6 +77,7 @@ namespace Ppcs.Graph
 			// Bind the image if it's already known
 			if (this._Inputs.ContainsKey(fromInput))
 			{
+				Godot.GD.Print($"Create: Binding input {fromInput} to shader {toShader} slot {toShaderSlot}");
 				toShader.BindUniform(this._Inputs[fromInput], toShaderSlot);
 			}
 		}
@@ -98,6 +99,7 @@ namespace Ppcs.Graph
 			{
 				foreach (GraphArcFromInputToShader arc in arcs)
 				{
+					Godot.GD.Print($"Bind: Binding input {input} to shader ${arc.ToShader} slot {arc.ToShaderSlot}");
 					arc.ToShader.BindUniform(inputImage, arc.ToShaderSlot);
 				}
 			}

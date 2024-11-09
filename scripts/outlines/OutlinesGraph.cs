@@ -85,7 +85,7 @@ namespace Outlines
 				Image temp = new(this._Rd, new Godot.Vector2I(1920, 1080));
 				this._ToCleanup.Add(temp);
 				composite.BindUniform(temp, 2);
-				this._Graph.CreateArcFromShaderToShader(jfaOutlines, 1, composite, 0);
+				this._Graph.CreateArcFromShaderToShader(jfaOutlines, 2, composite, 0);
 				this._Graph.CreateArcFromShaderToShader(boxBlur2, 1, composite, 1);
 
 				lastShader = composite;
