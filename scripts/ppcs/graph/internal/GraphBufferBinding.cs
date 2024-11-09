@@ -1,13 +1,14 @@
+using System;
 using Ppcs.Abstractions;
 
-namespace Ppcs.Graph
+namespace Ppcs.Graph.Internal
 {
 	public class GraphBufferBinding
 	{
-		public Shader Shader { get; private set; } = null;
+		public ComputeShader Shader { get; private set; } = null;
 		public int Slot { get; private set; } = 0;
 
-		public GraphBufferBinding(Shader shader, int slot)
+		public GraphBufferBinding(ComputeShader shader, int slot)
 		{
 			this.Shader = shader;
 			this.Slot = slot;
@@ -40,7 +41,7 @@ namespace Ppcs.Graph
 
 		public override int GetHashCode()
 		{
-			return System.HashCode.Combine(this.Shader, this.Slot);
+			return HashCode.Combine(this.Shader, this.Slot);
 		}
 	}
 }

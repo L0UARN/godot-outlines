@@ -1,9 +1,10 @@
 using Godot;
 using Godot.Collections;
+using Ppcs.Interfaces;
 
 namespace Ppcs.Abstractions
 {
-	public class Image : IUniformable, ICleanupable
+	public class ImageBuffer : IUniformable, ICleanupable
 	{
 		private readonly RenderingDevice _Rd = null;
 
@@ -60,13 +61,13 @@ namespace Ppcs.Abstractions
 			}
 		}
 
-		public Image(RenderingDevice renderingDevice, Vector2I size)
+		public ImageBuffer(RenderingDevice renderingDevice, Vector2I size)
 		{
 			this._Rd = renderingDevice;
 			this.Size = size;
 		}
 
-		public Image(RenderingDevice renderingDevice, Rid rid)
+		public ImageBuffer(RenderingDevice renderingDevice, Rid rid)
 		{
 			this._Rd = renderingDevice;
 			this.Rid = rid;
@@ -77,7 +78,7 @@ namespace Ppcs.Abstractions
 			return this._Rid;
 		}
 
-		public Uniform CreateUniform(Shader shader, int slot)
+		public ComputeShaderUniform CreateUniform(ComputeShader shader, int slot)
 		{
 			RDUniform uniform = new()
 			{

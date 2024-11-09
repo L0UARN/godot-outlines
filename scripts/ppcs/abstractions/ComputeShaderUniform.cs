@@ -1,14 +1,15 @@
 using Godot;
+using Ppcs.Interfaces;
 
 namespace Ppcs.Abstractions
 {
-	public class Uniform : ICleanupable
+	public class ComputeShaderUniform : ICleanupable
 	{
 		private readonly RenderingDevice _Rd = null;
 		public Rid Rid { get; private set; } = new();
 		public Rid UniformableRid { get; private set; } = new();
 
-		public Uniform(RenderingDevice renderingDevice, Rid uniformRid, Rid uniformableRid)
+		public ComputeShaderUniform(RenderingDevice renderingDevice, Rid uniformRid, Rid uniformableRid)
 		{
 			this._Rd = renderingDevice;
 			this.Rid = uniformRid;

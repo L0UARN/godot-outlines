@@ -1,4 +1,4 @@
-namespace Ppcs.Abstractions
+namespace Ppcs.Interfaces
 {
 	public interface ICleanupable
 	{

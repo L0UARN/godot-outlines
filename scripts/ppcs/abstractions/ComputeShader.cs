@@ -1,10 +1,12 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
+using Ppcs.Interfaces;
 
 namespace Ppcs.Abstractions
 {
-	public class Shader : ICleanupable
+	public class ComputeShader : ICleanupable
 	{
 		private readonly RenderingDevice _Rd = null;
 
@@ -12,23 +14,23 @@ namespace Ppcs.Abstractions
 		public Rid Rid { get; private set; } = new();
 		private Rid _PipelineRid = new();
 
-		public Shader(RenderingDevice renderingDevice, StringName shaderPath)
+		public ComputeShader(RenderingDevice renderingDevice, StringName shaderPath)
 		{
 			this._Rd = renderingDevice;
 
 			this.ShaderPath = shaderPath;
-			this.Rid = ShaderPool.GetOrCreateShaderRid(this._Rd, this.ShaderPath);
-			ShaderPool.HoldShader(this.ShaderPath);
+			this.Rid = ComputeShaderPool.GetOrCreateShaderRid(this._Rd, this.ShaderPath);
+			ComputeShaderPool.HoldShader(this.ShaderPath);
 			this._PipelineRid = this._Rd.ComputePipelineCreate(this.Rid);
 		}
 
-		private readonly Dictionary<int, Uniform> _Uniforms = new();
+		private readonly Dictionary<int, ComputeShaderUniform> _Uniforms = new();
 
 		public void BindUniform(IUniformable uniformable, int slot)
 		{
 			if (this._Uniforms.ContainsKey(slot))
 			{
-				Uniform previous = this._Uniforms[slot];
+				ComputeShaderUniform previous = this._Uniforms[slot];
 
 				if (previous.UniformableRid.Equals(uniformable.GetUniformableRid()))
 				{
@@ -57,7 +59,7 @@ namespace Ppcs.Abstractions
 			long computeList = this._Rd.ComputeListBegin();
 			this._Rd.ComputeListBindComputePipeline(computeList, this._PipelineRid);
 
-			foreach (KeyValuePair<int, Uniform> uniform in this._Uniforms)
+			foreach (KeyValuePair<int, ComputeShaderUniform> uniform in this._Uniforms)
 			{
 				this._Rd.ComputeListBindUniformSet(computeList, uniform.Value.Rid, (uint)uniform.Key);
 			}
@@ -71,7 +73,7 @@ namespace Ppcs.Abstractions
 
 		public void Cleanup()
 		{
-			foreach (Uniform uniform in this._Uniforms.Values)
+			foreach (ComputeShaderUniform uniform in this._Uniforms.Values)
 			{
 				uniform.Cleanup();
 			}
@@ -87,7 +89,7 @@ namespace Ppcs.Abstractions
 
 			if (this.ShaderPath != null)
 			{
-				ShaderPool.ReleaseShader(this._Rd, this.ShaderPath);
+				ComputeShaderPool.ReleaseShader(this._Rd, this.ShaderPath);
 			}
 
 			this.Rid = new();
@@ -101,7 +103,7 @@ namespace Ppcs.Abstractions
 				return false;
 			}
 
-			if (obj is Shader other)
+			if (obj is ComputeShader other)
 			{
 				if (!other.Rid.Equals(this.Rid))
 				{
@@ -126,7 +128,7 @@ namespace Ppcs.Abstractions
 
 		public override int GetHashCode()
 		{
-			return System.HashCode.Combine(this.Rid, this._PipelineRid);
+			return HashCode.Combine(this.Rid, this._PipelineRid);
 		}
 	}
 }

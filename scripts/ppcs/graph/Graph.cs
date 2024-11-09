@@ -1,21 +1,26 @@
 using System;
 using System.Collections.Generic;
 using Ppcs.Abstractions;
+using Ppcs.Graph.Internal;
+using Ppcs.Interfaces;
+using Godot;
 
 namespace Ppcs.Graph
 {
 	public class Graph : ICleanupable
 	{
-		private readonly Godot.RenderingDevice _Rd = null;
+		private readonly RenderingDevice _Rd = null;
 
-		private readonly Dictionary<int, Image> _Inputs = new();
+		private readonly Dictionary<int, ImageBuffer> _Inputs = new();
 		private readonly Dictionary<int, HashSet<GraphArcFromInputToShader>> _InputGraph = new();
-		private readonly Dictionary<int, Image> _Outputs = new();
+		private readonly Dictionary<int, ImageBuffer> _Outputs = new();
 		private readonly Dictionary<int, HashSet<GraphArcFromShaderToOutput>> _OutputGraph = new();
-		private readonly Dictionary<Shader, HashSet<GraphArcFromShaderToShader>> _ShaderGraph = new();
+		private readonly Dictionary<ComputeShader, HashSet<GraphArcFromShaderToShader>> _ShaderGraph = new();
+		private readonly Dictionary<GraphBufferBinding, ImageBuffer> _ImageBufferBindings = new();
+		private readonly List<ComputeShader> _Pipeline = new();
 
-		private Godot.Vector2I _ProcessingSize = Godot.Vector2I.MinValue;
-		public Godot.Vector2I ProcessingSize
+		private Vector2I _ProcessingSize = Vector2I.MinValue;
+		public Vector2I ProcessingSize
 		{
 			get => this._ProcessingSize;
 			set
@@ -37,13 +42,13 @@ namespace Ppcs.Graph
 				}
 
 				// Unbind all the shaders
-				foreach (GraphBufferBinding binding in this._NewBufferBindings.Keys)
+				foreach (GraphBufferBinding binding in this._ImageBufferBindings.Keys)
 				{
 					binding.Shader.UnbindUniform(binding.Slot);
 				}
 
 				// Resize each buffer and rebind them
-				foreach (KeyValuePair<GraphBufferBinding, Image> binding in this._NewBufferBindings)
+				foreach (KeyValuePair<GraphBufferBinding, ImageBuffer> binding in this._ImageBufferBindings)
 				{
 					// If multiple shaders are bound to this buffer, the size will be set multiple times
 					// But since there's a check that prevents from resizing to the same size, it's fine
@@ -51,21 +56,16 @@ namespace Ppcs.Graph
 					binding.Key.Shader.BindUniform(binding.Value, binding.Key.Slot);
 				}
 
-				Godot.GD.Print("Resize");
 				this._ProcessingSize = value;
 			}
 		}
 
-		private readonly Dictionary<GraphBufferBinding, Image> _NewBufferBindings = new();
-		// private readonly Dictionary<Image, HashSet<GraphBufferBinding>> _BufferBindings = new();
-		private readonly List<Shader> _Pipeline = new();
-
-		public Graph(Godot.RenderingDevice renderingDevice)
+		public Graph(RenderingDevice renderingDevice)
 		{
 			this._Rd = renderingDevice;
 		}
 
-		public void CreateArcFromInputToShader(int fromInput, Shader toShader, int toShaderSlot)
+		public void CreateArcFromInputToShader(int fromInput, ComputeShader toShader, int toShaderSlot)
 		{
 			if (!this._InputGraph.ContainsKey(fromInput))
 			{
@@ -77,14 +77,13 @@ namespace Ppcs.Graph
 			// Bind the image if it's already known
 			if (this._Inputs.ContainsKey(fromInput))
 			{
-				Godot.GD.Print($"Create: Binding input {fromInput} to shader {toShader} slot {toShaderSlot}");
 				toShader.BindUniform(this._Inputs[fromInput], toShaderSlot);
 			}
 		}
 
-		public void BindInput(int input, Image inputImage)
+		public void BindInput(int input, ImageBuffer inputImage)
 		{
-			if (this._Inputs.TryGetValue(input, out Image previous))
+			if (this._Inputs.TryGetValue(input, out ImageBuffer previous))
 			{
 				if (previous.Equals(inputImage))
 				{
@@ -99,13 +98,12 @@ namespace Ppcs.Graph
 			{
 				foreach (GraphArcFromInputToShader arc in arcs)
 				{
-					Godot.GD.Print($"Bind: Binding input {input} to shader ${arc.ToShader} slot {arc.ToShaderSlot}");
 					arc.ToShader.BindUniform(inputImage, arc.ToShaderSlot);
 				}
 			}
 		}
 
-		public void CreateArcFromShaderToShader(Shader fromShader, int fromShaderSlot, Shader toShader, int toShaderSlot)
+		public void CreateArcFromShaderToShader(ComputeShader fromShader, int fromShaderSlot, ComputeShader toShader, int toShaderSlot)
 		{
 			if (!this._ShaderGraph.ContainsKey(fromShader))
 			{
@@ -116,12 +114,12 @@ namespace Ppcs.Graph
 			this._ShaderGraph[fromShader].Add(newArc);
 
 			// Check if creating the arc has created a cycle in the graph
-			Stack<Shader> toVisit = new();
+			Stack<ComputeShader> toVisit = new();
 			toVisit.Push(fromShader);
 
 			while (toVisit.Count > 0)
 			{
-				Shader justVisited = toVisit.Pop();
+				ComputeShader justVisited = toVisit.Pop();
 
 				if (!this._ShaderGraph.ContainsKey(justVisited))
 				{
@@ -141,7 +139,7 @@ namespace Ppcs.Graph
 			}
 		}
 
-		public void CreateArcFromShaderToOutput(Shader fromShader, int fromShaderSlot, int toOutput)
+		public void CreateArcFromShaderToOutput(ComputeShader fromShader, int fromShaderSlot, int toOutput)
 		{
 			if (!this._OutputGraph.ContainsKey(toOutput))
 			{
@@ -157,9 +155,9 @@ namespace Ppcs.Graph
 			}
 		}
 
-		public void BindOutput(int output, Image outputImage)
+		public void BindOutput(int output, ImageBuffer outputImage)
 		{
-			if (this._Outputs.TryGetValue(output, out Image previous))
+			if (this._Outputs.TryGetValue(output, out ImageBuffer previous))
 			{
 				if (previous.Equals(outputImage))
 				{
@@ -179,11 +177,11 @@ namespace Ppcs.Graph
 			}
 		}
 
-		private Dictionary<Shader, HashSet<Shader>> GetReversedShaderGraph()
+		private Dictionary<ComputeShader, HashSet<ComputeShader>> GetReversedShaderGraph()
 		{
-			Dictionary<Shader, HashSet<Shader>> result = new();
+			Dictionary<ComputeShader, HashSet<ComputeShader>> result = new();
 
-			foreach (KeyValuePair<Shader, HashSet<GraphArcFromShaderToShader>> arcs in this._ShaderGraph)
+			foreach (KeyValuePair<ComputeShader, HashSet<GraphArcFromShaderToShader>> arcs in this._ShaderGraph)
 			{
 				foreach (GraphArcFromShaderToShader arc in arcs.Value)
 				{
@@ -199,9 +197,9 @@ namespace Ppcs.Graph
 			return result;
 		}
 
-		private Stack<Shader> GetStartingShadersToVisit(Dictionary<Shader, HashSet<Shader>> reversedShaderGraph)
+		private Stack<ComputeShader> GetStartingShadersToVisit(Dictionary<ComputeShader, HashSet<ComputeShader>> reversedShaderGraph)
 		{
-			Stack<Shader> result = new();
+			Stack<ComputeShader> result = new();
 
 			foreach (KeyValuePair<int, HashSet<GraphArcFromInputToShader>> arcs in this._InputGraph)
 			{
@@ -217,45 +215,45 @@ namespace Ppcs.Graph
 			return result;
 		}
 
-		private void BindShadersWithBuffer(Shader fromShader, int fromShaderSlot, Shader toShader, int toShaderSlot)
+		private void BindShadersWithBuffer(ComputeShader fromShader, int fromShaderSlot, ComputeShader toShader, int toShaderSlot)
 		{
 			// Find out if creating a new buffer is needed, or if there's already one for this output
-			Image buffer = null;
+			ImageBuffer buffer = null;
 			GraphBufferBinding fromBinding = new(fromShader, fromShaderSlot);
 
-			if (this._NewBufferBindings.ContainsKey(fromBinding))
+			if (this._ImageBufferBindings.ContainsKey(fromBinding))
 			{
-				buffer = this._NewBufferBindings[fromBinding];
+				buffer = this._ImageBufferBindings[fromBinding];
 			}
 			else
 			{
 				buffer = new(this._Rd, this._ProcessingSize);
-				this._NewBufferBindings[fromBinding] = buffer;
+				this._ImageBufferBindings[fromBinding] = buffer;
 			}
 
 			// Bind the output of `justVisited` to the input of the shader that depends on it
 			fromShader.BindUniform(buffer, fromShaderSlot);
 			// Bind the input of the shader that depends on `justVisited`
 			toShader.BindUniform(buffer, toShaderSlot);
-			this._NewBufferBindings[new(toShader, toShaderSlot)] = buffer;
+			this._ImageBufferBindings[new(toShader, toShaderSlot)] = buffer;
 		}
 
 		public void Build()
 		{
-			if (this._ProcessingSize.Equals(Godot.Vector2I.MinValue))
+			if (this._ProcessingSize.Equals(Vector2I.MinValue))
 			{
 				throw new Exception("Can't build the graph before having set the processing size.");
 			}
 
 			// this._ShaderGraph contains all the shaders that are dependent on one shader
 			// reversedShaderGraph contains all the shader that one shader is dependent on
-			Dictionary<Shader, HashSet<Shader>> reversedShaderGraph = this.GetReversedShaderGraph();
+			Dictionary<ComputeShader, HashSet<ComputeShader>> reversedShaderGraph = this.GetReversedShaderGraph();
 			// Start visiting the shader graph starting with the ones that use an input image
-			Stack<Shader> toVisit = this.GetStartingShadersToVisit(reversedShaderGraph);
+			Stack<ComputeShader> toVisit = this.GetStartingShadersToVisit(reversedShaderGraph);
 
 			while (toVisit.Count > 0)
 			{
-				Shader justVisited = toVisit.Pop();
+				ComputeShader justVisited = toVisit.Pop();
 				// These indices are needed to know where in the pipeline to insert the current shader
 				int firstDependentIndex = -1;
 				int lastDependencyIndex = -1;
@@ -285,7 +283,7 @@ namespace Ppcs.Graph
 
 				if (reversedShaderGraph.ContainsKey(justVisited))
 				{
-					foreach (Shader dependency in reversedShaderGraph[justVisited])
+					foreach (ComputeShader dependency in reversedShaderGraph[justVisited])
 					{
 						int dependencyIndex = this._Pipeline.IndexOf(dependency);
 
@@ -313,12 +311,6 @@ namespace Ppcs.Graph
 					this._Pipeline.Insert(lastDependencyIndex + 1, justVisited);
 				}
 			}
-
-			Godot.GD.Print("Pipeline:");
-			foreach (Shader shader in this._Pipeline)
-			{
-				Godot.GD.Print($"-> {shader}");
-			}
 		}
 
 		public bool IsBuilt()
@@ -328,7 +320,7 @@ namespace Ppcs.Graph
 
 		public void Run()
 		{
-			foreach (Shader step in this._Pipeline)
+			foreach (ComputeShader step in this._Pipeline)
 			{
 				step.Run(this._ProcessingSize);
 			}
@@ -354,17 +346,17 @@ namespace Ppcs.Graph
 
 			// Unbind all the buffers from the shaders before cleaning up the buffers
 			// This way there are no invalid uniforms at any point
-			foreach (GraphBufferBinding binding in this._NewBufferBindings.Keys)
+			foreach (GraphBufferBinding binding in this._ImageBufferBindings.Keys)
 			{
 				binding.Shader.UnbindUniform(binding.Slot);
 			}
 
-			foreach (Image buffer in this._NewBufferBindings.Values)
+			foreach (ImageBuffer buffer in this._ImageBufferBindings.Values)
 			{
 				buffer.Cleanup();
 			}
 
-			this._NewBufferBindings.Clear();
+			this._ImageBufferBindings.Clear();
 			this._Pipeline.Clear();
 		}
 	}

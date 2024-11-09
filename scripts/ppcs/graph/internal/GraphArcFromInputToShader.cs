@@ -1,13 +1,14 @@
 using Ppcs.Abstractions;
+using System;
 
-namespace Ppcs.Graph
+namespace Ppcs.Graph.Internal
 {
 	public class GraphArcFromInputToShader
 	{
-		public Shader ToShader { get; private set; } = null;
+		public ComputeShader ToShader { get; private set; } = null;
 		public int ToShaderSlot { get; private set; } = 0;
 
-		public GraphArcFromInputToShader(Shader toShader, int toShaderSlot)
+		public GraphArcFromInputToShader(ComputeShader toShader, int toShaderSlot)
 		{
 			this.ToShader = toShader;
 			this.ToShaderSlot = toShaderSlot;
@@ -38,10 +39,9 @@ namespace Ppcs.Graph
 			return false;
 		}
 
-		// override object.GetHashCode
 		public override int GetHashCode()
 		{
-			return System.HashCode.Combine(this.ToShader, this.ToShaderSlot);
+			return HashCode.Combine(this.ToShader, this.ToShaderSlot);
 		}
 	}
 }

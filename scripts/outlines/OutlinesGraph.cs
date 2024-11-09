@@ -1,19 +1,21 @@
 using System.Collections.Generic;
 using Ppcs.Graph;
 using Ppcs.Abstractions;
+using Ppcs.Interfaces;
+using Godot;
 
 namespace Outlines
 {
 	public class OutlinesGraph : ICleanupable
 	{
-		private readonly Godot.RenderingDevice _Rd = null;
+		private readonly RenderingDevice _Rd = null;
 		private readonly List<ICleanupable> _ToCleanup = new();
 		private readonly Graph _Graph = null;
-		private Image _Image = null;
+		private ImageBuffer _ImageToProcess = null;
 
 		public OutlinesGraph(int outlinesSize, int glowRadius)
 		{
-			this._Rd = Godot.RenderingServer.GetRenderingDevice();
+			this._Rd = RenderingServer.GetRenderingDevice();
 
 			if (this._Rd == null)
 			{
@@ -23,18 +25,18 @@ namespace Outlines
 			this._Graph = new(this._Rd);
 			this._ToCleanup.Add(this._Graph);
 
-			Shader jfaInit = new(this._Rd, "res://assets/shaders/jfa_init.glsl");
+			ComputeShader jfaInit = new(this._Rd, "res://assets/shaders/jfa_init.glsl");
 			this._ToCleanup.Add(jfaInit);
 			this._Graph.CreateArcFromInputToShader(0, jfaInit, 0);
 
-			int stepsNeeded = Godot.Mathf.CeilToInt(System.Math.Log2(outlinesSize));
-			Shader lastJfaStep = null;
+			int stepsNeeded = Mathf.CeilToInt(System.Math.Log2(outlinesSize));
+			ComputeShader lastJfaStep = null;
 
 			for (int i = stepsNeeded - 1; i >= 0; i--)
 			{
-				Shader nextJfaStep = new(this._Rd, "res://assets/shaders/jfa_step.glsl");
+				ComputeShader nextJfaStep = new(this._Rd, "res://assets/shaders/jfa_step.glsl");
 				this._ToCleanup.Add(nextJfaStep);
-				Buffer stepSizeBuffer = new(this._Rd, System.BitConverter.GetBytes((int)Godot.Mathf.Pow(2, i)));
+				StorageBuffer stepSizeBuffer = new(this._Rd, System.BitConverter.GetBytes((int)Mathf.Pow(2, i)));
 				this._ToCleanup.Add(stepSizeBuffer);
 				nextJfaStep.BindUniform(stepSizeBuffer, 2);
 
@@ -50,39 +52,39 @@ namespace Outlines
 				lastJfaStep = nextJfaStep;
 			}
 
-			Shader jfaOutlines = new(this._Rd, "res://assets/shaders/jfa_outlines.glsl");
+			ComputeShader jfaOutlines = new(this._Rd, "res://assets/shaders/jfa_outlines.glsl");
 			this._ToCleanup.Add(jfaOutlines);
 			this._Graph.CreateArcFromShaderToShader(lastJfaStep, 1, jfaOutlines, 0);
 			this._Graph.CreateArcFromInputToShader(0, jfaOutlines, 1);
-			Buffer outlinesSizeBuffer = new(this._Rd, System.BitConverter.GetBytes(outlinesSize));
+			StorageBuffer outlinesSizeBuffer = new(this._Rd, System.BitConverter.GetBytes(outlinesSize));
 			this._ToCleanup.Add(outlinesSizeBuffer);
 			jfaOutlines.BindUniform(outlinesSizeBuffer, 3);
 
-			Shader lastShader = jfaOutlines;
+			ComputeShader lastShader = jfaOutlines;
 			int lastShaderOutputSlot = 2;
 
 			if (glowRadius > 0)
 			{
-				Buffer blurRadiusBuffer = new(this._Rd, System.BitConverter.GetBytes(glowRadius));
+				StorageBuffer blurRadiusBuffer = new(this._Rd, System.BitConverter.GetBytes(glowRadius));
 				this._ToCleanup.Add(blurRadiusBuffer);
 
-				Shader boxBlur1 = new(this._Rd, "res://assets/shaders/box_blur.glsl");
+				ComputeShader boxBlur1 = new(this._Rd, "res://assets/shaders/box_blur.glsl");
 				this._ToCleanup.Add(boxBlur1);
-				Buffer blurDirectionBuffer1 = new(this._Rd, System.BitConverter.GetBytes(true));
+				StorageBuffer blurDirectionBuffer1 = new(this._Rd, System.BitConverter.GetBytes(true));
 				boxBlur1.BindUniform(blurRadiusBuffer, 2);
 				boxBlur1.BindUniform(blurDirectionBuffer1, 3);
 				this._Graph.CreateArcFromShaderToShader(jfaOutlines, 2, boxBlur1, 0);
 
-				Shader boxBlur2 = new(this._Rd, "res://assets/shaders/box_blur.glsl");
+				ComputeShader boxBlur2 = new(this._Rd, "res://assets/shaders/box_blur.glsl");
 				this._ToCleanup.Add(boxBlur2);
-				Buffer blurDirectionBuffer2 = new(this._Rd, System.BitConverter.GetBytes(false));
+				StorageBuffer blurDirectionBuffer2 = new(this._Rd, System.BitConverter.GetBytes(false));
 				boxBlur2.BindUniform(blurRadiusBuffer, 2);
 				boxBlur2.BindUniform(blurDirectionBuffer2, 3);
 				this._Graph.CreateArcFromShaderToShader(boxBlur1, 1, boxBlur2, 0);
 
-				Shader composite = new(this._Rd, "res://assets/shaders/composite.glsl");
+				ComputeShader composite = new(this._Rd, "res://assets/shaders/composite.glsl");
 				this._ToCleanup.Add(composite);
-				Image temp = new(this._Rd, new Godot.Vector2I(1920, 1080));
+				ImageBuffer temp = new(this._Rd, new Vector2I(1920, 1080));
 				this._ToCleanup.Add(temp);
 				composite.BindUniform(temp, 2);
 				this._Graph.CreateArcFromShaderToShader(jfaOutlines, 2, composite, 0);
@@ -95,19 +97,19 @@ namespace Outlines
 			this._Graph.CreateArcFromShaderToOutput(lastShader, lastShaderOutputSlot, 0);
 		}
 
-		public void Run(Godot.Rid image)
+		public void Run(Rid image)
 		{
 			if (this._Graph == null)
 			{
 				return;
 			}
 
-			if (!this._Graph.IsBuilt() || !image.Equals(this._Image.Rid))
+			if (!image.Equals(this._ImageToProcess?.Rid))
 			{
-				this._Image = new(this._Rd, image);
-				this._Graph.ProcessingSize = this._Image.Size;
-				this._Graph.BindInput(0, this._Image);
-				this._Graph.BindOutput(0, this._Image);
+				this._ImageToProcess = new(this._Rd, image);
+				this._Graph.ProcessingSize = this._ImageToProcess.Size;
+				this._Graph.BindInput(0, this._ImageToProcess);
+				this._Graph.BindOutput(0, this._ImageToProcess);
 
 				if (!this._Graph.IsBuilt())
 				{

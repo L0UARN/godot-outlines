@@ -1,6 +1,5 @@
-using System.Collections.Generic;
 using Godot;
-using Ppcs.Abstractions;
+using Ppcs.Interfaces;
 
 namespace Outlines
 {
