@@ -1,6 +1,7 @@
-[gd_scene load_steps=15 format=3 uid="uid://b2bgu3j7lj8xq"]
+[gd_scene load_steps=16 format=3 uid="uid://b2bgu3j7lj8xq"]
 
 [ext_resource type="Script" path="res://scripts/outlines/OutlinerComponent.cs" id="1_4y7fx"]
+[ext_resource type="Material" uid="uid://dludom0xvi6fg" path="res://assets/shaders/outlineable.tres" id="2_1al3w"]
 [ext_resource type="PackedScene" uid="uid://4q2l35yt3uyr" path="res://outlines_layer.tscn" id="2_udepg"]
 [ext_resource type="Script" path="res://scripts/outlines/OutlinerComponentDemo.cs" id="2_vmmf1"]
 
@@ -95,12 +96,16 @@ _data = {
 transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 0, 0)
 shadow_enabled = true
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-mesh = SubResource("BoxMesh_03cqh")
+[node name="Node3D2" type="Node3D" parent="."]
 
-[node name="MeshInstance3D3" type="MeshInstance3D" parent="."]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Node3D2"]
+mesh = SubResource("BoxMesh_03cqh")
+skeleton = NodePath("../..")
+
+[node name="MeshInstance3D3" type="MeshInstance3D" parent="Node3D2"]
 transform = Transform3D(0.749776, 0, 0.661691, 0, 1, 0, -0.661691, 0, 0.749776, -0.379181, 0.972552, 0.965422)
 mesh = SubResource("SphereMesh_k34qs")
+skeleton = NodePath("../..")
 
 [node name="Node3D" type="Node3D" parent="."]
 
@@ -114,9 +119,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.39213, 0, 0)
 mesh = SubResource("PrismMesh_xo604")
 skeleton = NodePath("../..")
 
-[node name="OutlinerComponent" type="Node" parent="Node3D" node_paths=PackedStringArray("NodesToOutline")]
+[node name="OutlinerComponent" type="Node" parent="Node3D" node_paths=PackedStringArray("_Target")]
 script = ExtResource("1_4y7fx")
-NodesToOutline = NodePath("..")
+_Target = NodePath("..")
+_Enabled = true
+_OutlinesColor = Color(0.329412, 1, 1, 1)
+_OutlineableMaterial = ExtResource("2_1al3w")
 
 [node name="OutlinerComponentDemo" type="Node" parent="Node3D/OutlinerComponent" node_paths=PackedStringArray("OutlinerComponent")]
 script = ExtResource("2_vmmf1")

@@ -93,10 +93,10 @@ namespace Outlines
 			}
 			else if (this._Graphs.Count > viewCount)
 			{
-				for (int i = (int)viewCount; i != this._Graphs.Count; )
+				while (this._Graphs.Count > viewCount)
 				{
-					this._Graphs[i].Cleanup();
-					this._Graphs.RemoveAt(i);
+					this._Graphs[(int)viewCount].Cleanup();
+					this._Graphs.RemoveAt((int)viewCount);
 				}
 			}
 

@@ -24,7 +24,7 @@ namespace Outlines
 		[Export(PropertyHint.Range, "0.5,1.0,0.05")]
 		public float OutlinesRenderScale { get; set; } = 1.0f;
 		[Export(PropertyHint.Layers3DRender)]
-		public int OutlineLayer { get; set; } = (int)Mathf.Pow(2, 19);
+		public uint OutlineLayer { get; set; } = (uint)Mathf.Pow(2.0f, 19.0f);
 
 		private void SetupCaptureViewport()
 		{
@@ -64,17 +64,17 @@ namespace Outlines
 
 		private void SetupCaptureCamera()
 		{
-			for (int i = 1; i < 21; i++)
+			Camera3D mainCamera = this.GetViewport().GetCamera3D();
+
+			if (mainCamera == null)
 			{
-				if (i == Math.Log2(this.OutlineLayer) + 1)
-				{
-					this.OutlinesCaptureCamera.SetCullMaskValue(i, true);
-				}
-				else
-				{
-					this.OutlinesCaptureCamera.SetCullMaskValue(i, false);
-				}
+				return;
 			}
+
+			// Make the main camera not see the outline layer
+			mainCamera.CullMask &= ~this.OutlineLayer;
+			// Make the capture camera only see the outline layer
+			this.OutlinesCaptureCamera.CullMask = this.OutlineLayer;
 
 			// Add the outlines effect to the camera
 			int scaledOutlinesSize = Mathf.CeilToInt(this.OutlinesRenderScale * this.OutlinesSize);
@@ -96,6 +96,7 @@ namespace Outlines
 		{
 			Vector2I mainViewportSize = Vector2I.Zero;
 			Viewport mainViewport = this.GetViewport();
+
 			if (mainViewport is Window window)
 			{
 				mainViewportSize = window.Size;
@@ -134,6 +135,7 @@ namespace Outlines
 		private void UpdateCaptureCamera()
 		{
 			Camera3D mainCamera = this.GetViewport().GetCamera3D();
+
 			if (mainCamera == null)
 			{
 				return;

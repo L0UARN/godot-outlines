@@ -11,8 +11,9 @@ void main() {
 	vec4 current_pixel = imageLoad(input_image, current_position);
 
 	// The current pixel is not a seed
-	if (current_pixel.a == 0.0f) {
-		imageStore(output_image, current_position, vec4(0.0f));
+	if (current_pixel.a < 1.0f) {
+		vec4 packed_zero = vec4(unpackUnorm2x16(0), unpackUnorm2x16(0));
+		imageStore(output_image, current_position, packed_zero);
 		return;
 	}
 

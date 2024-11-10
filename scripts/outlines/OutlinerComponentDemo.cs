@@ -16,7 +16,7 @@ namespace Outlines
 			MeshInstance3D newOutlineable = new();
 			AddedOutlineables.Add(newOutlineable);
 			newOutlineable.Mesh = new BoxMesh();
-			OutlinerComponent.NodesToOutline.AddChild(newOutlineable);
+			OutlinerComponent.Target.AddChild(newOutlineable);
 
 			newOutlineable.GlobalPosition = new(
 				4.0f - Random.Shared.NextSingle() * 8.0f,

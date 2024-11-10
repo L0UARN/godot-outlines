@@ -1,74 +1,168 @@
-using System;
 using Godot;
+using Godot.Collections;
 
 namespace Outlines
 {
 	[GlobalClass]
 	public partial class OutlinerComponent : Node
 	{
-		[Export(PropertyHint.Layers3DRender)]
-		public int OutlineLayer { get; set; } = (int)Mathf.Pow(2, 19);
+		private StringName _OutlineableGroup = null;
+		private readonly Dictionary<MeshInstance3D, MeshInstance3D> _Outlineables = new();
 
-		private string _OutlinerGroupName = "";
-
-		private void RegisterNode(Node node)
+		private void Setup(Node node)
 		{
-			node.ChildEnteredTree += this.RegisterNode;
-			node.ChildExitingTree += this.UnregisterNode;
-
-			if (node is VisualInstance3D visualInstance)
+			// Do not create an outlineable mesh for outlineable meshes (risk of infinite recursion)
+			if (node.IsInGroup(this._OutlineableGroup))
 			{
-				visualInstance.AddToGroup(this._OutlinerGroupName);
-				this.EnableOutlinesForNode(visualInstance, this._Enabled);
+				return;
 			}
 
+			// Setup the children of the node to setup
 			foreach (Node child in node.GetChildren())
 			{
-				this.RegisterNode(child);
+				this.Setup(child);
+			}
+
+			// If the node to setup is a mesh, then create an outlineable mesh for it
+			if (node is MeshInstance3D meshInstance)
+			{
+				MeshInstance3D outlineable = new();
+				this._Outlineables[meshInstance] = outlineable;
+				outlineable.Mesh = meshInstance.Mesh;
+				outlineable.MaterialOverride = this._OutlineableMaterial;
+				outlineable.Layers = this._OutlinesLayer;
+				outlineable.AddToGroup(this._OutlineableGroup);
+				node.AddChild(outlineable);
+
+				if (this._Enabled)
+				{
+					outlineable.Show();
+				}
+				else
+				{
+					outlineable.Hide();
+				}
+			}
+
+			// When a node is added as a child to the node to setup, setup that new node
+			node.ChildEnteredTree += this.Setup;
+			// When a child of the node to setup is removed, cleanup that former child
+			node.ChildExitingTree += this.Cleanup;
+		}
+
+		private void Cleanup(Node node)
+		{
+			// No need to cleanup outlineable meshes, since they don't have children and none of their signals are listened to
+			if (node.IsInGroup(this._OutlineableGroup))
+			{
+				return;
+			}
+
+			// Stop listening to the signals
+			node.ChildEnteredTree -= this.Setup;
+			node.ChildExitingTree -= this.Cleanup;
+
+			// Remove the associated outlineable
+			if (node is MeshInstance3D meshInstance && this._Outlineables.TryGetValue(meshInstance, out MeshInstance3D outlineable))
+			{
+				meshInstance.RemoveChild(outlineable);
+				outlineable.QueueFree();
+				this._Outlineables.Remove(meshInstance);
+			}
+
+			// Cleanup the children of the node to cleanup
+			foreach (Node child in node.GetChildren())
+			{
+				this.Cleanup(child);
 			}
 		}
 
-		private void UnregisterNode(Node node)
-		{
-			node.ChildEnteredTree -= this.RegisterNode;
-			node.ChildExitingTree -= this.UnregisterNode;
-
-			if (node.IsInGroup(this._OutlinerGroupName))
-			{
-				node.RemoveFromGroup(this._OutlinerGroupName);
-				this.EnableOutlinesForNode(node, false);
-			}
-
-			foreach (Node child in node.GetChildren())
-			{
-				this.UnregisterNode(child);
-			}
-		}
-
-		private Node _NodesToOutline = null;
 		[Export]
-		public Node NodesToOutline
+		private Node _Target = null;
+		public Node Target
 		{
-			get => this._NodesToOutline;
+			get => this._Target;
 			set
 			{
-				if (Engine.IsEditorHint() || !this.IsNodeReady())
+				this.Cleanup(this._Target);
+				this.Setup(value);
+
+				this._Target = value;
+			}
+		}
+
+		[Export]
+		private bool _Enabled = false;
+		public bool Enabled
+		{
+			get => this._Enabled;
+			set
+			{
+				foreach (MeshInstance3D outlineable in this._Outlineables.Values)
 				{
-					this._NodesToOutline = value;
+					if (value)
+					{
+						outlineable.Show();
+					}
+					else
+					{
+						outlineable.Hide();
+					}
+				}
+
+				this._Enabled = value;
+			}
+		}
+
+		[ExportCategory("Outlines Settings")]
+		[Export(PropertyHint.ColorNoAlpha)]
+		private Color _OutlinesColor = Colors.White;
+		public Color OutlinesColor
+		{
+			get => this._OutlinesColor;
+			set
+			{
+				this._OutlineableMaterial?.SetShaderParameter("outlines_color", value);
+				this._OutlinesColor = value;
+			}
+		}
+
+		[ExportCategory("Technical Settings")]
+		[Export]
+		private ShaderMaterial _OutlineableMaterial = null;
+		public ShaderMaterial OutlineableMaterial
+		{
+			get => this._OutlineableMaterial;
+			set
+			{
+				this._OutlineableMaterial = (ShaderMaterial)value.Duplicate();
+				this._OutlineableMaterial.SetShaderParameter("outlines_color", this._OutlinesColor);
+
+				foreach (MeshInstance3D outlineable in this._Outlineables.Values)
+				{
+					outlineable.MaterialOverride = this._OutlineableMaterial;
+				}
+			}
+		}
+
+		[Export(PropertyHint.Layers3DRender)]
+		private uint _OutlinesLayer = (uint)Mathf.Pow(2.0f, 19.0f);
+		public uint OutlinesLayer
+		{
+			get => this._OutlinesLayer;
+			set
+			{
+				if (value.Equals(this._OutlinesLayer))
+				{
 					return;
 				}
 
-				if (this._NodesToOutline != null)
+				foreach (MeshInstance3D outlineable in this._Outlineables.Values)
 				{
-					this.UnregisterNode(this._NodesToOutline);
+					outlineable.Layers = value;
 				}
 
-				if (value != null)
-				{
-					this.RegisterNode(value);
-				}
-
-				this._NodesToOutline = value;
+				this._OutlinesLayer = value;
 			}
 		}
 
@@ -76,48 +170,25 @@ namespace Outlines
 		{
 			base._Ready();
 
-			this._OutlinerGroupName = $"Outliner_{this.GetInstanceId()}";
+			this._OutlineableGroup = $"Outlineable_{this.GetInstanceId()}";
+			this.OutlinesLayer = this._OutlinesLayer;
+			this.OutlineableMaterial = this._OutlineableMaterial;
+			this.OutlinesColor = this._OutlinesColor;
+			this.Enabled = this._Enabled;
 
-			if (this._NodesToOutline != null)
+			if (this._Target != null)
 			{
-				this.RegisterNode(this._NodesToOutline);
+				this.Setup(this._Target);
 			}
 		}
 
-		private void EnableOutlinesForNode(Node node, bool enable)
+		public override void _ExitTree()
 		{
-			int outlineLayer = (int)Math.Log2(this.OutlineLayer) + 1;
+			base._ExitTree();
 
-			if (node is VisualInstance3D visualInstance)
+			if (this._Target != null)
 			{
-				if (enable)
-				{
-					visualInstance.SetLayerMaskValue(outlineLayer, true);
-				}
-				else
-				{
-					visualInstance.SetLayerMaskValue(outlineLayer, false);
-				}
-			}
-		}
-
-		private bool _Enabled = false;
-		public bool Enabled
-		{
-			get => this._Enabled;
-			set
-			{
-				if (this._Enabled == value)
-				{
-					return;
-				}
-
-				foreach (Node node in GetTree().GetNodesInGroup(this._OutlinerGroupName))
-				{
-					this.EnableOutlinesForNode(node, value);
-				}
-
-				this._Enabled = value;
+				this.Cleanup(this._Target);
 			}
 		}
 	}

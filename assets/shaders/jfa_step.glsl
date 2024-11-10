@@ -12,7 +12,7 @@ void main() {
 	ivec2 image_size = imageSize(input_image);
 
 	float distance_to_closest_seed = 1.0f / 0.0f;
-	vec4 closest_seed = vec4(0.0f);
+	vec4 closest_seed = vec4(unpackUnorm2x16(0), unpackUnorm2x16(0));
 
 	for (int x = -1; x <= 1; x++) {
 		for (int y = -1; y <= 1; y++) {
