@@ -7,19 +7,13 @@ namespace Outlines
 	[GlobalClass]
 	public partial class CompositorEffectOutlines : CompositorEffect, ICleanupable
 	{
-		private int _OutlinesSize = 4;
 		[Export]
+		private int _OutlinesSize = 4;
 		public int OutlinesSize
 		{
 			get => this._OutlinesSize;
 			set
 			{
-				if (Engine.IsEditorHint())
-				{
-					this._OutlinesSize = value;
-					return;
-				}
-
 				if (value == this._OutlinesSize)
 				{
 					return;
@@ -35,19 +29,13 @@ namespace Outlines
 			}
 		}
 
-		private int _GlowRadius = 2;
 		[Export(PropertyHint.Range, "0,32,1")]
+		private int _GlowRadius = 2;
 		public int GlowRadius
 		{
 			get => this._GlowRadius;
 			set
 			{
-				if (Engine.IsEditorHint())
-				{
-					this._GlowRadius = value;
-					return;
-				}
-
 				if (value == this._GlowRadius)
 				{
 					return;

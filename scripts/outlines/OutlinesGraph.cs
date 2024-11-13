@@ -25,16 +25,17 @@ namespace Outlines
 			this._Graph = new(this._Rd);
 			this._ToCleanup.Add(this._Graph);
 
-			ComputeShader jfaInit = new(this._Rd, "res://assets/shaders/jfa_init.glsl");
+			ComputeShader jfaInit = new(this._Rd, "res://assets/shaders/jfa_init_debug.glsl");
 			this._ToCleanup.Add(jfaInit);
 			this._Graph.CreateArcFromInputToShader(0, jfaInit, 0);
+			// this._Graph.CreateArcFromShaderToOutput(jfaInit, 1, 0);
 
 			int stepsNeeded = Mathf.CeilToInt(System.Math.Log2(outlinesSize));
 			ComputeShader lastJfaStep = null;
 
 			for (int i = stepsNeeded - 1; i >= 0; i--)
 			{
-				ComputeShader nextJfaStep = new(this._Rd, "res://assets/shaders/jfa_step.glsl");
+				ComputeShader nextJfaStep = new(this._Rd, "res://assets/shaders/jfa_step_debug.glsl");
 				this._ToCleanup.Add(nextJfaStep);
 				StorageBuffer stepSizeBuffer = new(this._Rd, System.BitConverter.GetBytes((int)Mathf.Pow(2, i)));
 				this._ToCleanup.Add(stepSizeBuffer);
@@ -52,7 +53,10 @@ namespace Outlines
 				lastJfaStep = nextJfaStep;
 			}
 
-			ComputeShader jfaOutlines = new(this._Rd, "res://assets/shaders/jfa_outlines.glsl");
+			// ComputeShader lastShader = lastJfaStep;
+			// int lastShaderOutputSlot = 1;
+
+			ComputeShader jfaOutlines = new(this._Rd, "res://assets/shaders/jfa_outlines_debug.glsl");
 			this._ToCleanup.Add(jfaOutlines);
 			this._Graph.CreateArcFromShaderToShader(lastJfaStep, 1, jfaOutlines, 0);
 			this._Graph.CreateArcFromInputToShader(0, jfaOutlines, 1);
@@ -63,36 +67,33 @@ namespace Outlines
 			ComputeShader lastShader = jfaOutlines;
 			int lastShaderOutputSlot = 2;
 
-			if (glowRadius > 0)
-			{
-				StorageBuffer blurRadiusBuffer = new(this._Rd, System.BitConverter.GetBytes(glowRadius));
-				this._ToCleanup.Add(blurRadiusBuffer);
+			// if (glowRadius > 0)
+			// {
+			// 	StorageBuffer blurRadiusBuffer = new(this._Rd, System.BitConverter.GetBytes(glowRadius));
+			// 	this._ToCleanup.Add(blurRadiusBuffer);
 
-				ComputeShader boxBlur1 = new(this._Rd, "res://assets/shaders/box_blur.glsl");
-				this._ToCleanup.Add(boxBlur1);
-				StorageBuffer blurDirectionBuffer1 = new(this._Rd, System.BitConverter.GetBytes(true));
-				boxBlur1.BindUniform(blurRadiusBuffer, 2);
-				boxBlur1.BindUniform(blurDirectionBuffer1, 3);
-				this._Graph.CreateArcFromShaderToShader(jfaOutlines, 2, boxBlur1, 0);
+			// 	ComputeShader boxBlur1 = new(this._Rd, "res://assets/shaders/box_blur.glsl");
+			// 	this._ToCleanup.Add(boxBlur1);
+			// 	StorageBuffer blurDirectionBuffer1 = new(this._Rd, System.BitConverter.GetBytes(true));
+			// 	boxBlur1.BindUniform(blurRadiusBuffer, 2);
+			// 	boxBlur1.BindUniform(blurDirectionBuffer1, 3);
+			// 	this._Graph.CreateArcFromShaderToShader(jfaOutlines, 2, boxBlur1, 0);
 
-				ComputeShader boxBlur2 = new(this._Rd, "res://assets/shaders/box_blur.glsl");
-				this._ToCleanup.Add(boxBlur2);
-				StorageBuffer blurDirectionBuffer2 = new(this._Rd, System.BitConverter.GetBytes(false));
-				boxBlur2.BindUniform(blurRadiusBuffer, 2);
-				boxBlur2.BindUniform(blurDirectionBuffer2, 3);
-				this._Graph.CreateArcFromShaderToShader(boxBlur1, 1, boxBlur2, 0);
+			// 	ComputeShader boxBlur2 = new(this._Rd, "res://assets/shaders/box_blur.glsl");
+			// 	this._ToCleanup.Add(boxBlur2);
+			// 	StorageBuffer blurDirectionBuffer2 = new(this._Rd, System.BitConverter.GetBytes(false));
+			// 	boxBlur2.BindUniform(blurRadiusBuffer, 2);
+			// 	boxBlur2.BindUniform(blurDirectionBuffer2, 3);
+			// 	this._Graph.CreateArcFromShaderToShader(boxBlur1, 1, boxBlur2, 0);
 
-				ComputeShader composite = new(this._Rd, "res://assets/shaders/composite.glsl");
-				this._ToCleanup.Add(composite);
-				ImageBuffer temp = new(this._Rd, new Vector2I(1920, 1080));
-				this._ToCleanup.Add(temp);
-				composite.BindUniform(temp, 2);
-				this._Graph.CreateArcFromShaderToShader(jfaOutlines, 2, composite, 0);
-				this._Graph.CreateArcFromShaderToShader(boxBlur2, 1, composite, 1);
+			// 	ComputeShader composite = new(this._Rd, "res://assets/shaders/composite.glsl");
+			// 	this._ToCleanup.Add(composite);
+			// 	this._Graph.CreateArcFromShaderToShader(jfaOutlines, 2, composite, 0);
+			// 	this._Graph.CreateArcFromShaderToShader(boxBlur2, 1, composite, 1);
 
-				lastShader = composite;
-				lastShaderOutputSlot = 2;
-			}
+			// 	lastShader = composite;
+			// 	lastShaderOutputSlot = 2;
+			// }
 
 			this._Graph.CreateArcFromShaderToOutput(lastShader, lastShaderOutputSlot, 0);
 		}
