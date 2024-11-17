@@ -11,13 +11,13 @@ namespace PostProcessing.Structures.Graph
 	{
 		private readonly RenderingDevice _Rd = null;
 
-		private readonly Dictionary<int, ImageBuffer> _Inputs = new();
-		private readonly Dictionary<int, HashSet<GraphArcFromInputToShader>> _InputGraph = new();
-		private readonly Dictionary<int, ImageBuffer> _Outputs = new();
-		private readonly Dictionary<int, HashSet<GraphArcFromShaderToOutput>> _OutputGraph = new();
-		private readonly Dictionary<ComputeShader, HashSet<GraphArcFromShaderToShader>> _ShaderGraph = new();
-		private readonly Dictionary<GraphBufferBinding, ImageBuffer> _ImageBufferBindings = new();
-		private readonly List<ComputeShader> _Pipeline = new();
+		private readonly Dictionary<int, ImageBuffer> _Inputs = [];
+		private readonly Dictionary<int, HashSet<GraphArcFromInputToShader>> _InputGraph = [];
+		private readonly Dictionary<int, ImageBuffer> _Outputs = [];
+		private readonly Dictionary<int, HashSet<GraphArcFromShaderToOutput>> _OutputGraph = [];
+		private readonly Dictionary<ComputeShader, HashSet<GraphArcFromShaderToShader>> _ShaderGraph = [];
+		private readonly Dictionary<GraphBufferBinding, ImageBuffer> _ImageBufferBindings = [];
+		private readonly List<ComputeShader> _Pipeline = [];
 
 		private Vector2I _ProcessingSize = Vector2I.MinValue;
 		public Vector2I ProcessingSize
@@ -105,6 +105,16 @@ namespace PostProcessing.Structures.Graph
 
 		public void CreateArcFromShaderToShader(ComputeShader fromShader, int fromShaderSlot, ComputeShader toShader, int toShaderSlot)
 		{
+			if (fromShader == null)
+			{
+				throw new Exception("Can't create an arc from null to a shader.");
+			}
+
+			if (toShader == null)
+			{
+				throw new Exception("Can't create an arc from a shader to null.");
+			}
+
 			if (!this._ShaderGraph.ContainsKey(fromShader))
 			{
 				this._ShaderGraph[fromShader] = new(1);

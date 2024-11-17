@@ -122,7 +122,6 @@ skeleton = NodePath("../..")
 script = ExtResource("1_uyspn")
 _Target = NodePath("..")
 _Enabled = true
-_OutlinesColor = Color(0.501961, 1, 1, 1)
 
 [node name="OutlinerComponentDemo" type="Node" parent="Node3D/OutlinerComponent" node_paths=PackedStringArray("OutlinerComponent")]
 script = ExtResource("3_c247d")
