@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using Ppcs.Abstractions;
-using Ppcs.Graph.Internal;
-using Ppcs.Interfaces;
+using PostProcessing.Abstractions;
+using PostProcessing.Structures.Graph.Internal;
+using PostProcessing.Behavior;
 using Godot;
 
-namespace Ppcs.Graph
+namespace PostProcessing.Structures.Graph
 {
 	public class Graph : ICleanupable
 	{

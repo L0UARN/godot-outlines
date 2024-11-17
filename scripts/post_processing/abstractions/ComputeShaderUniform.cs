@@ -1,7 +1,7 @@
 using Godot;
-using Ppcs.Interfaces;
+using PostProcessing.Behavior;
 
-namespace Ppcs.Abstractions
+namespace PostProcessing.Abstractions
 {
 	public class ComputeShaderUniform : ICleanupable
 	{

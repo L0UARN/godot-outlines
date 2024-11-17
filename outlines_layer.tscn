@@ -1,16 +1,16 @@
 [gd_scene load_steps=2 format=3 uid="uid://4q2l35yt3uyr"]
 
-[ext_resource type="Script" path="res://scripts/outlines/OutlinesDisplayComponent.cs" id="1_jdrhh"]
+[ext_resource type="Script" path="res://scripts/outlines/nodes/OutlinesDisplayComponent.cs" id="1_h0ym6"]
 
 [node name="OutlinesLayer" type="CanvasLayer"]
 
 [node name="OutlinesDisplayComponent" type="Node" parent="." node_paths=PackedStringArray("OutlinesCaptureViewport", "OutlinesCaptureCamera", "OutlinesDisplayRect")]
-script = ExtResource("1_jdrhh")
+script = ExtResource("1_h0ym6")
 OutlinesCaptureViewport = NodePath("../CaptureViewport")
 OutlinesCaptureCamera = NodePath("../CaptureViewport/CaptureCamera")
 OutlinesDisplayRect = NodePath("../DisplayRect")
-OutlinesSize = 24
-GlowRadius = 0
+OutlinesSize = 8
+GlowRadius = 4
 
 [node name="CaptureViewport" type="SubViewport" parent="."]
 

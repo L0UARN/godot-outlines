@@ -1,4 +1,4 @@
-namespace Ppcs.Interfaces
+namespace PostProcessing.Behavior
 {
 	public interface ICleanupable
 	{

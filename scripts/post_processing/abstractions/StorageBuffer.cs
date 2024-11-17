@@ -1,8 +1,8 @@
 using Godot;
 using Godot.Collections;
-using Ppcs.Interfaces;
+using PostProcessing.Behavior;
 
-namespace Ppcs.Abstractions
+namespace PostProcessing.Abstractions
 {
 	public class StorageBuffer : IUniformable, ICleanupable
 	{

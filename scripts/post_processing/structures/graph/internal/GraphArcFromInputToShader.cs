@@ -1,7 +1,7 @@
-using Ppcs.Abstractions;
+using PostProcessing.Abstractions;
 using System;
 
-namespace Ppcs.Graph.Internal
+namespace PostProcessing.Structures.Graph.Internal
 {
 	public class GraphArcFromInputToShader
 	{

@@ -1,7 +1,7 @@
 using Godot;
-using Ppcs.Abstractions;
+using PostProcessing.Abstractions;
 
-namespace Ppcs.Interfaces
+namespace PostProcessing.Behavior
 {
 	public interface IUniformable
 	{

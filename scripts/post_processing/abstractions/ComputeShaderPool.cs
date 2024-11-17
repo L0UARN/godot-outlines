@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Godot;
 
-namespace Ppcs.Abstractions
+namespace PostProcessing.Abstractions
 {
 	public static class ComputeShaderPool
 	{

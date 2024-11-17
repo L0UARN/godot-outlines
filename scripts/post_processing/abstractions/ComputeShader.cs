@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
-using Ppcs.Interfaces;
+using PostProcessing.Behavior;
 
-namespace Ppcs.Abstractions
+namespace PostProcessing.Abstractions
 {
 	public class ComputeShader : ICleanupable
 	{

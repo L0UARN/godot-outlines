@@ -1,9 +1,8 @@
-[gd_scene load_steps=16 format=3 uid="uid://b2bgu3j7lj8xq"]
+[gd_scene load_steps=15 format=3 uid="uid://b2bgu3j7lj8xq"]
 
-[ext_resource type="Script" path="res://scripts/outlines/OutlinerComponent.cs" id="1_4y7fx"]
-[ext_resource type="Material" uid="uid://dludom0xvi6fg" path="res://assets/shaders/outlineable.tres" id="2_1al3w"]
+[ext_resource type="Script" path="res://scripts/outlines/nodes/OutlinerComponent.cs" id="1_uyspn"]
 [ext_resource type="PackedScene" uid="uid://4q2l35yt3uyr" path="res://outlines_layer.tscn" id="2_udepg"]
-[ext_resource type="Script" path="res://scripts/outlines/OutlinerComponentDemo.cs" id="2_vmmf1"]
+[ext_resource type="Script" path="res://scripts/outlines/nodes/OutlinerComponentDemo.cs" id="3_c247d"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7d8ek"]
 albedo_color = Color(1, 0, 0, 1)
@@ -110,7 +109,7 @@ skeleton = NodePath("../..")
 [node name="Node3D" type="Node3D" parent="."]
 
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="Node3D"]
-transform = Transform3D(0.816984, 0, 0.576661, 0, 1, 0, -0.576661, 0, 0.816984, 0.842525, 0.6361, 0)
+transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, 1, 1, 0)
 mesh = SubResource("BoxMesh_ktjv2")
 skeleton = NodePath("../..")
 
@@ -120,25 +119,25 @@ mesh = SubResource("PrismMesh_xo604")
 skeleton = NodePath("../..")
 
 [node name="OutlinerComponent" type="Node" parent="Node3D" node_paths=PackedStringArray("_Target")]
-script = ExtResource("1_4y7fx")
+script = ExtResource("1_uyspn")
 _Target = NodePath("..")
 _Enabled = true
-_OutlinesColor = Color(0.329412, 1, 1, 1)
-_OutlineableMaterial = ExtResource("2_1al3w")
+_OutlinesColor = Color(0.501961, 1, 1, 1)
 
 [node name="OutlinerComponentDemo" type="Node" parent="Node3D/OutlinerComponent" node_paths=PackedStringArray("OutlinerComponent")]
-script = ExtResource("2_vmmf1")
+script = ExtResource("3_c247d")
 OutlinerComponent = NodePath("..")
 
 [node name="Pivot" type="Node3D" parent="."]
 
 [node name="Camera3D" type="Camera3D" parent="Pivot"]
-transform = Transform3D(1, 0, 0, 0, 0.922154, 0.386824, 0, -0.386824, 0.922154, 0.864, 1.05812, 1.08552)
+transform = Transform3D(1, 0, 0, 0, 0.906308, 0.422618, 0, -0.422618, 0.906308, 0, 2.5, 5)
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="Pivot"]
 libraries = {
 "": SubResource("AnimationLibrary_jyfow")
 }
+autoplay = "rotating_camera"
 speed_scale = 0.1
 
 [node name="OutlinesLayer" parent="." instance=ExtResource("2_udepg")]

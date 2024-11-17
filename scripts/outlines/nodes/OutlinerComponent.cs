@@ -6,8 +6,12 @@ namespace Outlines
 	[GlobalClass]
 	public partial class OutlinerComponent : Node
 	{
+		private const string OUTLINEABLE_FOLDER = "res://assets/outlines/outlineable";
+		private const string OUTLINEABLE_MATERIAL_PATH = $"{OUTLINEABLE_FOLDER}/outlineable.tres";
+		private ShaderMaterial _OutlineableMaterial = null;
+
 		private StringName _OutlineableGroup = null;
-		private readonly Dictionary<MeshInstance3D, MeshInstance3D> _Outlineables = new();
+		private readonly Dictionary<MeshInstance3D, MeshInstance3D> _Outlineables = [];
 
 		private void Setup(Node node)
 		{
@@ -122,29 +126,12 @@ namespace Outlines
 			get => this._OutlinesColor;
 			set
 			{
-				this._OutlineableMaterial?.SetShaderParameter("outlines_color", value);
+				this._OutlineableMaterial.SetShaderParameter("outlines_color", value);
 				this._OutlinesColor = value;
 			}
 		}
 
 		[ExportCategory("Technical Settings")]
-		[Export]
-		private ShaderMaterial _OutlineableMaterial = null;
-		public ShaderMaterial OutlineableMaterial
-		{
-			get => this._OutlineableMaterial;
-			set
-			{
-				this._OutlineableMaterial = (ShaderMaterial)value.Duplicate();
-				this._OutlineableMaterial.SetShaderParameter("outlines_color", this._OutlinesColor);
-
-				foreach (MeshInstance3D outlineable in this._Outlineables.Values)
-				{
-					outlineable.MaterialOverride = this._OutlineableMaterial;
-				}
-			}
-		}
-
 		[Export(PropertyHint.Layers3DRender)]
 		private uint _OutlinesLayer = (uint)Mathf.Pow(2.0f, 19.0f);
 		public uint OutlinesLayer
@@ -152,11 +139,6 @@ namespace Outlines
 			get => this._OutlinesLayer;
 			set
 			{
-				if (value.Equals(this._OutlinesLayer))
-				{
-					return;
-				}
-
 				foreach (MeshInstance3D outlineable in this._Outlineables.Values)
 				{
 					outlineable.Layers = value;
@@ -171,8 +153,9 @@ namespace Outlines
 			base._Ready();
 
 			this._OutlineableGroup = $"Outlineable_{this.GetInstanceId()}";
+			this._OutlineableMaterial = ResourceLoader.Load<ShaderMaterial>(OUTLINEABLE_MATERIAL_PATH);
+
 			this.OutlinesLayer = this._OutlinesLayer;
-			this.OutlineableMaterial = this._OutlineableMaterial;
 			this.OutlinesColor = this._OutlinesColor;
 			this.Enabled = this._Enabled;
 

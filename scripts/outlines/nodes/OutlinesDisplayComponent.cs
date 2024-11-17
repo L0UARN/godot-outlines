@@ -1,4 +1,3 @@
-using System;
 using Godot;
 
 namespace Outlines
@@ -112,6 +111,7 @@ namespace Outlines
 			// Bind the viewport's texture to the TextureRect's texture
 			this.OutlinesDisplayRect.Texture = this.OutlinesCaptureViewport.GetTexture();
 			this.OutlinesDisplayRect.StretchMode = TextureRect.StretchModeEnum.Scale;
+			this.OutlinesDisplayRect.TextureFilter = CanvasItem.TextureFilterEnum.Linear;
 		}
 
 		private void HandleSizeChanged()
