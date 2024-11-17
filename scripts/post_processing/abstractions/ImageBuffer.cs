@@ -101,5 +101,30 @@ namespace PostProcessing.Abstractions
 			this._Rid = new();
 			this._Size = Vector2I.Zero;
 		}
+
+		public override bool Equals(object obj)
+		{
+			if (obj == null)
+			{
+				return false;
+			}
+
+			if (obj is ImageBuffer other)
+			{
+				if (!other._Rid.Equals(this._Rid))
+				{
+					return false;
+				}
+
+				return true;
+			}
+
+			return false;
+		}
+
+		public override int GetHashCode()
+		{
+			return this._Rid.GetHashCode();
+		}
 	}
 }

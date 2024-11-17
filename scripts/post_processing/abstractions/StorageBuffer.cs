@@ -72,5 +72,30 @@ namespace PostProcessing.Abstractions
 
 			this.Rid = new();
 		}
+
+		public override bool Equals(object obj)
+		{
+			if (obj == null)
+			{
+				return false;
+			}
+
+			if (obj is StorageBuffer other)
+			{
+				if (!other.Rid.Equals(this.Rid))
+				{
+					return false;
+				}
+
+				return true;
+			}
+
+			return false;
+		}
+
+		public override int GetHashCode()
+		{
+			return this.Rid.GetHashCode();
+		}
 	}
 }
