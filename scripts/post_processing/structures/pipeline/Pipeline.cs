@@ -37,7 +37,7 @@ namespace PostProcessing.Structures.Pipeline
 				ImageBuffer newBuffer1 = new(this._Rd, value);
 				ImageBuffer newBuffer2 = new(this._Rd, value);
 
-				// If the pipeline has already been built and needs buffers
+				// If the pipeline has already been built (and needs buffers)
 				if (this.IsBuilt && this._Pipeline.Count > 1)
 				{
 					// For each shader in the pipeline, re-bind its input and outputs to the new buffers
@@ -108,7 +108,7 @@ namespace PostProcessing.Structures.Pipeline
 					// Re-bind the new input image to all shaders that need access to it
 					foreach (KeyValuePair<ComputeShader, PipelineShaderInputOutput> shaderInputOutput in this._ShaderInputOutputs)
 					{
-						if (shaderInputOutput.Value.Equals(this._Pipeline[0]))
+						if (shaderInputOutput.Key.Equals(this._Pipeline[0]))
 						{
 							shaderInputOutput.Key.BindUniform(value, shaderInputOutput.Value.InputSlot);
 						}
