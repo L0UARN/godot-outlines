@@ -12,6 +12,7 @@ namespace PostProcessing.Structures.Pipeline
 		private RenderingDevice _Rd = null;
 		private readonly List<ComputeShader> _Pipeline = new();
 		private readonly Dictionary<ComputeShader, PipelineShaderInputOutput> _ShaderInputOutputs = new();
+		public bool IsBuilt { get; private set; } = false;
 
 		private ImageBuffer _Buffer1 = null;
 		private ImageBuffer _Buffer2 = null;
@@ -32,10 +33,54 @@ namespace PostProcessing.Structures.Pipeline
 					return;
 				}
 
+				// Create new buffers of the new processing size
+				ImageBuffer newBuffer1 = new(this._Rd, value);
+				ImageBuffer newBuffer2 = new(this._Rd, value);
+
+				// If the pipeline has already been built and needs buffers
+				if (this.IsBuilt && this._Pipeline.Count > 1)
+				{
+					// For each shader in the pipeline, re-bind its input and outputs to the new buffers
+					for (int i = 0; i < this._Pipeline.Count; i++)
+					{
+						if (!this._ShaderInputOutputs.TryGetValue(this._Pipeline[i], out PipelineShaderInputOutput inputOutput))
+						{
+							throw new Exception("One of the pipeline's shader has not been correctly added.");
+						}
+
+						if (i == 0)
+						{
+							this._Pipeline[i].BindUniform(newBuffer1, inputOutput.OutputSlot);
+						}
+						else if (i == this._Pipeline.Count - 1)
+						{
+							if (i % 2 == 1)
+							{
+								this._Pipeline[i].BindUniform(newBuffer1, inputOutput.InputSlot);
+							}
+							else
+							{
+								this._Pipeline[i].BindUniform(newBuffer2, inputOutput.InputSlot);
+							}
+						}
+						else if (i % 2 == 1)
+						{
+							this._Pipeline[i].BindUniform(newBuffer1, inputOutput.InputSlot);
+							this._Pipeline[i].BindUniform(newBuffer2, inputOutput.OutputSlot);
+						}
+						else
+						{
+							this._Pipeline[i].BindUniform(newBuffer2, inputOutput.InputSlot);
+							this._Pipeline[i].BindUniform(newBuffer1, inputOutput.OutputSlot);
+						}
+					}
+				}
+
+				// Cleanup the former buffers
 				this._Buffer1?.Cleanup();
-				this._Buffer1 = new(this._Rd, value);
+				this._Buffer1 = newBuffer1;
 				this._Buffer2?.Cleanup();
-				this._Buffer2 = new(this._Rd, value);
+				this._Buffer2 = newBuffer2;
 
 				this._ProcessingSize = value;
 			}
@@ -57,12 +102,21 @@ namespace PostProcessing.Structures.Pipeline
 					return;
 				}
 
-				// Bind the input image to all shaders that need access to it
-				foreach (KeyValuePair<ComputeShader, PipelineShaderInputOutput> shaderInputOutput in this._ShaderInputOutputs)
+				// If the pipeline has already been built
+				if (this.IsBuilt)
 				{
-					if (!shaderInputOutput.Value.HasInputImageAccess)
+					// Re-bind the new input image to all shaders that need access to it
+					foreach (KeyValuePair<ComputeShader, PipelineShaderInputOutput> shaderInputOutput in this._ShaderInputOutputs)
 					{
-						shaderInputOutput.Key.BindUniform(value, shaderInputOutput.Value.InputImageSlot);
+						if (shaderInputOutput.Value.Equals(this._Pipeline[0]))
+						{
+							shaderInputOutput.Key.BindUniform(value, shaderInputOutput.Value.InputSlot);
+						}
+
+						if (shaderInputOutput.Value.HasInputImageAccess)
+						{
+							shaderInputOutput.Key.BindUniform(value, shaderInputOutput.Value.InputImageSlot);
+						}
 					}
 				}
 
@@ -92,6 +146,15 @@ namespace PostProcessing.Structures.Pipeline
 					return;
 				}
 
+				// If the pipeline has already been built
+				if (this.IsBuilt)
+				{
+					// Re-bind the new output image to the output of the last shader in the pipeline
+					ComputeShader last = this._Pipeline[^1];
+					PipelineShaderInputOutput inputOutput = this._ShaderInputOutputs[last];
+					last.BindUniform(value, inputOutput.OutputSlot);
+				}
+
 				// Adjust the processing size to take the new output image into account
 				this.ProcessingSize = new(
 					Math.Max(value.Size.X, this._InputImage?.Size.X ?? 0),
@@ -109,6 +172,11 @@ namespace PostProcessing.Structures.Pipeline
 
 		public void AddShader(ComputeShader shader, int inputSlot, int outputSlot)
 		{
+			if (this.IsBuilt)
+			{
+				throw new Exception("Can't add a shader to the pipeline once it has been built.");
+			}
+
 			if (shader == null)
 			{
 				throw new Exception("Can't add a null step to the pipeline.");
@@ -133,11 +201,6 @@ namespace PostProcessing.Structures.Pipeline
 			{
 				inputOutput.HasInputImageAccess = true;
 				inputOutput.InputImageSlot = inputImageSlot;
-
-				if (this._InputImage != null)
-				{
-					shader.BindUniform(this._InputImage, inputImageSlot);
-				}
 			}
 			else
 			{
@@ -157,9 +220,18 @@ namespace PostProcessing.Structures.Pipeline
 				throw new Exception("The pipeline requires at least one shader in order to be built.");
 			}
 
+			// For each shader in the pipeline, bind its input and outputs:
+			// - to the input image and first buffer if it's the first shader in the pipeline
+			// - to the last buffer used and the output image if it's the last shader in the pipeline
+			// - to the first and second buffer, alternating based of the position in the pipeline of the shader if it's not first or last
+			// Also bind the input image to it if the shader requires it
+
 			for (int i = 0; i < this._Pipeline.Count; i++)
 			{
-				PipelineShaderInputOutput inputOutput = this._ShaderInputOutputs[this._Pipeline[i]];
+				if (!this._ShaderInputOutputs.TryGetValue(this._Pipeline[i], out PipelineShaderInputOutput inputOutput))
+				{
+					throw new Exception("One of the pipeline's shader has not been correctly added.");
+				}
 
 				if (this._Pipeline.Count == 1)
 				{
@@ -201,11 +273,16 @@ namespace PostProcessing.Structures.Pipeline
 				}
 			}
 
-			// TODO: IsBuild member variable
+			this.IsBuilt = true;
 		}
 
 		public void Run()
 		{
+			if (!this.IsBuilt)
+			{
+				throw new Exception("Can't run the pipeline before it has been built.");
+			}
+
 			for (int i = 0; i < this._Pipeline.Count; i++)
 			{
 				this._Pipeline[i].Run(this.ProcessingSize);
@@ -214,6 +291,8 @@ namespace PostProcessing.Structures.Pipeline
 
 		public void Cleanup()
 		{
+			this.IsBuilt = false;
+
 			foreach (KeyValuePair<ComputeShader, PipelineShaderInputOutput> shaderInputOutput in this._ShaderInputOutputs)
 			{
 				shaderInputOutput.Key.UnbindUniform(shaderInputOutput.Value.InputSlot);

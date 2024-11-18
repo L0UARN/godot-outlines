@@ -54,8 +54,7 @@ namespace Outlines.Tools
 			}
 			else
 			{
-				// TODO: build the pipeline
-				// result = new OutlinesPostProcessingPipeline(this._OutlinesSize, this._GlowRadius);
+				result = new OutlinesPostProcessingPipeline(this._OutlinesSize);
 			}
 
 			return result;
