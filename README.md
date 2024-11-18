@@ -16,6 +16,7 @@ A way to draw the outlines of 3D objects.
 
 ### On the way
 
+- Fix for the outlines shader when the glow effect is disabled
 - Better ease of use
 - Display the outlines on any camera
 - *Change the outline size and / or glow radius while running?*
