@@ -1,3 +1,4 @@
+using System;
 using Godot;
 
 namespace Outlines
@@ -26,11 +27,15 @@ namespace Outlines
 
 		private void SetupCaptureViewport()
 		{
-			this._CaptureViewport = new();
-			this.AddChild(this._CaptureViewport);
+			if (this._CaptureViewport == null)
+			{
+				this._CaptureViewport = new();
+				this.AddChild(this._CaptureViewport);
+			}
 
 			Vector2I mainViewportSize = Vector2I.Zero;
 			Viewport mainViewport = this.Camera.GetViewport();
+
 			if (mainViewport is Window window)
 			{
 				mainViewportSize = window.Size;
@@ -65,8 +70,11 @@ namespace Outlines
 
 		private void SetupCaptureCamera()
 		{
-			this._CaptureCamera = new();
-			this.AddChild(this._CaptureCamera);
+			if (this._CaptureCamera == null)
+			{
+				this._CaptureCamera = new();
+				this._CaptureViewport.AddChild(this._CaptureCamera);
+			}
 
 			// Make the main camera not see the outline layer
 			this.Camera.CullMask &= ~this.OutlineLayer;
@@ -91,8 +99,11 @@ namespace Outlines
 
 		private void SetupDisplayRect()
 		{
-			this._DisplayRect = new();
-			this.AddChild(this._DisplayRect);
+			if (this._DisplayRect == null)
+			{
+				this._DisplayRect = new();
+				this.AddChild(this._DisplayRect);
+			}
 
 			Vector2I mainViewportSize = Vector2I.Zero;
 			Viewport mainViewport = this.Camera.GetViewport();
@@ -115,12 +126,48 @@ namespace Outlines
 			this._DisplayRect.TextureFilter = CanvasItem.TextureFilterEnum.Linear;
 		}
 
+		private void HandleSizeChanged()
+		{
+			this.SetupCaptureViewport();
+			this.SetupDisplayRect();
+		}
+
+		private void SetupForResizing()
+		{
+			Viewport mainViewport = this.Camera.GetViewport();
+			mainViewport.SizeChanged += HandleSizeChanged;
+		}
+
 		public override void _Ready()
 		{
 			base._Ready();
 
 			this.SetupCaptureViewport();
 			this.SetupCaptureCamera();
+			this.SetupDisplayRect();
+			this.SetupForResizing();
+		}
+
+		private void UpdateCaptureCamera()
+		{
+			// Mimic the main camera
+			this._CaptureCamera.GlobalTransform = this.Camera.GlobalTransform;
+			this._CaptureCamera.Projection = this.Camera.Projection;
+			this._CaptureCamera.Fov = this.Camera.Fov;
+			this._CaptureCamera.Size = this.Camera.Size;
+			this._CaptureCamera.Near = this.Camera.Near;
+			this._CaptureCamera.Far = this.Camera.Far;
+			this._CaptureCamera.FrustumOffset = this.Camera.FrustumOffset;
+			this._CaptureCamera.VOffset = this.Camera.VOffset;
+			this._CaptureCamera.HOffset = this.Camera.HOffset;
+			this._CaptureCamera.KeepAspect = this.Camera.KeepAspect;
+		}
+
+		public override void _Process(double delta)
+		{
+			base._Process(delta);
+
+			this.UpdateCaptureCamera();
 		}
 	}
 }
