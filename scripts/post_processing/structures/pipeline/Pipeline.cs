@@ -67,7 +67,7 @@ namespace PostProcessing.Structures.Pipeline
 				}
 
 				// Adjust the processing size to take the new input image into account
-				this._ProcessingSize = new(
+				this.ProcessingSize = new(
 					Math.Max(value.Size.X, this._OutputImage?.Size.X ?? 0),
 					Math.Max(value.Size.Y, this._OutputImage?.Size.Y ?? 0)
 				);
@@ -93,7 +93,7 @@ namespace PostProcessing.Structures.Pipeline
 				}
 
 				// Adjust the processing size to take the new output image into account
-				this._ProcessingSize = new(
+				this.ProcessingSize = new(
 					Math.Max(value.Size.X, this._InputImage?.Size.X ?? 0),
 					Math.Max(value.Size.Y, this._InputImage?.Size.Y ?? 0)
 				);
@@ -145,36 +145,70 @@ namespace PostProcessing.Structures.Pipeline
 			}
 		}
 
-		public void Run()
+		public void Build()
 		{
-			ImageBuffer input = null;
-			ImageBuffer output = null;
+			if (this._InputImage == null || this._OutputImage == null || this.ProcessingSize.Equals(Vector2I.MinValue))
+			{
+				throw new Exception("The input and output images must be set before building the pipeline.");
+			}
+
+			if (this._Pipeline.Count == 0)
+			{
+				throw new Exception("The pipeline requires at least one shader in order to be built.");
+			}
 
 			for (int i = 0; i < this._Pipeline.Count; i++)
 			{
-				// TODO: when this._Pipeline.Count == 1
-				if (i == 0)
+				PipelineShaderInputOutput inputOutput = this._ShaderInputOutputs[this._Pipeline[i]];
+
+				if (this._Pipeline.Count == 1)
 				{
-					input = this._InputImage;
-					output = this._Buffer1;
+					this._Pipeline[i].BindUniform(this._InputImage, inputOutput.InputSlot);
+					this._Pipeline[i].BindUniform(this._OutputImage, inputOutput.OutputSlot);
+				}
+				else if (i == 0)
+				{
+					this._Pipeline[i].BindUniform(this._InputImage, inputOutput.InputSlot);
+					this._Pipeline[i].BindUniform(this._Buffer1, inputOutput.OutputSlot);
 				}
 				else if (i == this._Pipeline.Count - 1)
 				{
-					input = output;
-					output = this._OutputImage;
+					if (i % 2 == 1)
+					{
+						this._Pipeline[i].BindUniform(this._Buffer1, inputOutput.InputSlot);
+						this._Pipeline[i].BindUniform(this._OutputImage, inputOutput.OutputSlot);
+					}
+					else
+					{
+						this._Pipeline[i].BindUniform(this._Buffer2, inputOutput.InputSlot);
+						this._Pipeline[i].BindUniform(this._OutputImage, inputOutput.OutputSlot);
+					}
 				}
 				else if (i % 2 == 1)
 				{
-					input = this._Buffer1;
-					output = this._Buffer2;
+					this._Pipeline[i].BindUniform(this._Buffer1, inputOutput.InputSlot);
+					this._Pipeline[i].BindUniform(this._Buffer2, inputOutput.OutputSlot);
 				}
 				else
 				{
-					input = this._Buffer2;
-					output = this._Buffer1;
+					this._Pipeline[i].BindUniform(this._Buffer2, inputOutput.InputSlot);
+					this._Pipeline[i].BindUniform(this._Buffer1, inputOutput.OutputSlot);
 				}
 
-				this._Pipeline[0].Run(this._ProcessingSize);
+				if (inputOutput.HasInputImageAccess)
+				{
+					this._Pipeline[i].BindUniform(this._InputImage, inputOutput.InputImageSlot);
+				}
+			}
+
+			// TODO: IsBuild member variable
+		}
+
+		public void Run()
+		{
+			for (int i = 0; i < this._Pipeline.Count; i++)
+			{
+				this._Pipeline[i].Run(this.ProcessingSize);
 			}
 		}
 
