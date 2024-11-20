@@ -1,8 +1,9 @@
-[gd_scene load_steps=15 format=3 uid="uid://b2bgu3j7lj8xq"]
+[gd_scene load_steps=16 format=3 uid="uid://b2bgu3j7lj8xq"]
 
 [ext_resource type="Script" path="res://scripts/outlines/nodes/OutlinerComponent.cs" id="1_uyspn"]
 [ext_resource type="Script" path="res://scripts/outlines/nodes/OutlinerComponentDemo.cs" id="3_c247d"]
 [ext_resource type="Script" path="res://scripts/outlines/nodes/OutlinesDisplayComponent.cs" id="3_weiuc"]
+[ext_resource type="Script" path="res://scripts/outlines/nodes/OutlinesDisplayDemoComponent.cs" id="4_1mtw3"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7d8ek"]
 albedo_color = Color(1, 0, 0, 1)
@@ -45,7 +46,7 @@ tracks/0/keys = {
 tracks/1/type = "value"
 tracks/1/imported = false
 tracks/1/enabled = true
-tracks/1/path = NodePath("Camera3D:fov")
+tracks/1/path = NodePath("Camera1:fov")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
@@ -73,7 +74,7 @@ tracks/0/keys = {
 tracks/1/type = "value"
 tracks/1/imported = false
 tracks/1/enabled = true
-tracks/1/path = NodePath("Camera3D:fov")
+tracks/1/path = NodePath("Camera1:fov")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
@@ -109,7 +110,7 @@ skeleton = NodePath("../..")
 [node name="Node3D" type="Node3D" parent="."]
 
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="Node3D"]
-transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, 1, 1, 0)
+transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, 1, 0.5, 0)
 mesh = SubResource("BoxMesh_ktjv2")
 skeleton = NodePath("../..")
 
@@ -129,12 +130,11 @@ OutlinerComponent = NodePath("..")
 
 [node name="Pivot" type="Node3D" parent="."]
 
-[node name="Camera3D" type="Camera3D" parent="Pivot"]
+[node name="Camera1" type="Camera3D" parent="Pivot"]
 transform = Transform3D(1, 0, 0, 0, 0.906308, 0.422618, 0, -0.422618, 0.906308, 0, 2.5, 5)
 
-[node name="OutlinesDisplayComponent" type="Node" parent="Pivot/Camera3D" node_paths=PackedStringArray("Camera")]
-script = ExtResource("3_weiuc")
-Camera = NodePath("..")
+[node name="Camera2" type="Camera3D" parent="Pivot"]
+transform = Transform3D(-3.09086e-08, 0.707107, -0.707107, 3.09086e-08, 0.707107, 0.707107, 1, 1.53837e-15, -4.37114e-08, -3, 4, 0)
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="Pivot"]
 libraries = {
@@ -142,3 +142,15 @@ libraries = {
 }
 autoplay = "rotating_camera"
 speed_scale = 0.1
+
+[node name="OutlinesDisplayComponent" type="Node" parent="Pivot" node_paths=PackedStringArray("_Camera")]
+script = ExtResource("3_weiuc")
+_Camera = NodePath("../Camera1")
+_OutlinesSize = 8
+_GlowRadius = 8
+
+[node name="OutlinesDisplayDemoComponent" type="Node" parent="Pivot/OutlinesDisplayComponent" node_paths=PackedStringArray("_OutlinesDisplayComponent", "_Camera1", "_Camera2")]
+script = ExtResource("4_1mtw3")
+_OutlinesDisplayComponent = NodePath("..")
+_Camera1 = NodePath("../../Camera1")
+_Camera2 = NodePath("../../Camera2")

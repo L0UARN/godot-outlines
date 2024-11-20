@@ -8,7 +8,8 @@ namespace Outlines
 	public partial class OutlinerComponentDemo : Node
 	{
 		[Export]
-		public OutlinerComponent OutlinerComponent = null;
+		private OutlinerComponent OutlinerComponent = null;
+
 		private Array<MeshInstance3D> AddedOutlineables = new();
 
 		private void AddOutlineable()
