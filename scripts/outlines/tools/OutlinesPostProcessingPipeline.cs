@@ -13,10 +13,11 @@ namespace Outlines.Tools
 		private const string JFA_INIT_SHADER_PATH = $"{SHADER_FOLDER_PATH}/jfa_init.glsl";
 		private const string JFA_STEP_SHADER_PATH = $"{SHADER_FOLDER_PATH}/jfa_step.glsl";
 		private const string JFA_OUTLINES_SHADER_PATH = $"{SHADER_FOLDER_PATH}/jfa_outlines.glsl";
+		private const string COPY_SHADER_PATH = $"{SHADER_FOLDER_PATH}/copy.glsl";
 
 		private readonly int _OutlinesSize = 4;
 		private RenderingDevice _Rd = null;
-		private readonly List<ICleanupable> _Resources = new(5);
+		private readonly List<ICleanupable> _Resources = new(6);
 		private Pipeline _Pipeline = null;
 		private ImageBuffer _Image = null;
 
@@ -52,6 +53,15 @@ namespace Outlines.Tools
 			jfaOutlines.BindUniform(outlinesSizeBuffer, 3);
 
 			this._Pipeline.AddShaderWithInputAccess(jfaOutlines, 0, 2, 1);
+
+			// This step may seem unecessary, but it prevents weird glitches from happening:
+			// - jfaOutlines is reading from and writing to the output image at the same time
+			// - this creates some artifacts on the output image
+			// - to fix it, we add another step in between jfaOutlines and the output
+			// - this way, jfaOutlines instead writes to a buffer image as it reads from the output image
+			ComputeShader copy = new(this._Rd, COPY_SHADER_PATH);
+			this._Resources.Add(copy);
+			this._Pipeline.AddShader(copy, 0, 1);
 		}
 
 		public OutlinesPostProcessingPipeline(int outlinesSize)

@@ -135,6 +135,7 @@ transform = Transform3D(1, 0, 0, 0, 0.906308, 0.422618, 0, -0.422618, 0.906308, 
 [node name="OutlinesDisplayComponent" type="Node" parent="Pivot/Camera3D" node_paths=PackedStringArray("Camera")]
 script = ExtResource("3_weiuc")
 Camera = NodePath("..")
+GlowRadius = 0
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="Pivot"]
 libraries = {
