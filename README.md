@@ -13,13 +13,11 @@ A way to draw the outlines of 3D objects.
 - Smooth and anti-aliased
 - Optional "glow" effect to the outlines
 - **Very, very fast** (can draw outlines of any size with very little performance cost)
+- Modify the outlines settings at runtime
 
 ### On the way
 
-- Fix for the outlines shader when the glow effect is disabled
-- Better ease of use
-- Display the outlines on any camera
-- *Change the outline size and / or glow radius while running?*
+- Display the outlines on any non-fullscreen camera
 - *Hide outlines that are hidden behind other meshes?*
 
 ## Usage
@@ -30,6 +28,8 @@ A way to draw the outlines of 3D objects.
 
 Download and copy the `script` and `assets` folders to your project. If you ever want to change the location of the assets in your project, you will need to update their location in the scripts.
 
+> The `OutlinerComponentDemo.cs` and `OutlinesDisplayDemoComponent.cs` scripts, both located in `scripts/outlines/nodes` were created for the purpose of testing and showcasing the system. Feel free to remove them from your projet, because your probably won't need them. If however you decide to use them, note that they will require configuring "ToggleOutlines", "AddOutlineable", "RemoveOutlineable", "SwitchCamera" and "SwitchEffect" in the input map.
+
 ### Select the nodes to outline
 
 To outline 3D meshes, you will need to use the `OutlinerComponent` node. Place it anywhere in a scene, and set its "Target" exported variable to the node that you want to outline. Note that the `OutlinerComponent` will also outline all children of the selected node, so there is no need to use multiple `OutlinerComponent`s if you need to outline an object made of multiple meshes.
@@ -38,14 +38,6 @@ The `OutlinerComponent` node has a property named `Enabled` that you can toggle 
 
 ### Draw the outlines
 
-In order to actually see the outlines, you will need to setup a few things.
+In order to actually see the outlines, you will simply need to add a `OutlinesDisplayComponent` node to the same scene as your `Camera3D`, and fill in its "Camera" exported variable.
 
-- Start by creating a new scene, with a `CanvasLayer` as a root node.
-- Add a `SubViewport` node as a child of the `CanvasLayer`.
-- Add a `Camera3D` node to the `SubViewport`.
-- Add a `TextureRect` as a child of the `CanvasLayer`.
-- Finally, add an `OutlinesDisplayComponent` node as a child of the `CanvasLayer`.
-
-You do not need to change any of the settings of the nodes you just created, except for the `OutlinesDisplayComponent`. For each setting of the "Required nodes" section, select the matching one that you just created.
-
-Once this is done, add the scene to your main scene (you could even add it to the autoloaded scenes, if you frequently need outlines). The outlines should be working now.
+Once this is done, everything should be working correctly!
