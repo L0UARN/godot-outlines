@@ -24,14 +24,12 @@ namespace PostProcessing.Abstractions
 			this._PipelineRid = this._Rd.ComputePipelineCreate(this.Rid);
 		}
 
-		private readonly Dictionary<int, ComputeShaderUniform> _Uniforms = new();
+		private readonly Dictionary<int, ComputeShaderUniform> _Uniforms = [];
 
 		public void BindUniform(IUniformable uniformable, int slot)
 		{
-			if (this._Uniforms.ContainsKey(slot))
+			if (this._Uniforms.TryGetValue(slot, out ComputeShaderUniform previous))
 			{
-				ComputeShaderUniform previous = this._Uniforms[slot];
-
 				if (previous.UniformableRid.Equals(uniformable.GetUniformableRid()))
 				{
 					return;
@@ -45,12 +43,12 @@ namespace PostProcessing.Abstractions
 
 		public void UnbindUniform(int slot)
 		{
-			if (!this._Uniforms.ContainsKey(slot))
+			if (!this._Uniforms.TryGetValue(slot, out ComputeShaderUniform uniform))
 			{
 				return;
 			}
 
-			this._Uniforms[slot].Cleanup();
+			uniform.Cleanup();
 			this._Uniforms.Remove(slot);
 		}
 
@@ -64,8 +62,8 @@ namespace PostProcessing.Abstractions
 				this._Rd.ComputeListBindUniformSet(computeList, uniform.Value.Rid, (uint)uniform.Key);
 			}
 
-			uint runSizeX = (uint) Mathf.FloorToInt(Mathf.Min(processingSize.X, processingSize.X) / 8);
-			uint runSizeY = (uint) Mathf.FloorToInt(Mathf.Min(processingSize.Y, processingSize.Y) / 8);
+			uint runSizeX = (uint) Mathf.CeilToInt(processingSize.X / 8.0f);
+			uint runSizeY = (uint) Mathf.CeilToInt(processingSize.Y / 8.0f);
 
 			this._Rd.ComputeListDispatch(computeList, runSizeX, runSizeY, 1);
 			this._Rd.ComputeListEnd();

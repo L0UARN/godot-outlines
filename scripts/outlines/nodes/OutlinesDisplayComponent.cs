@@ -51,15 +51,9 @@ namespace Outlines
 			}
 
 			// Scale the viewport's size according to the render scale
-			Vector2I scaledSize = new(
+			this._CaptureViewport.Size = new(
 				Mathf.FloorToInt(mainViewportSize.X * this.OutlinesRenderScale),
 				Mathf.FloorToInt(mainViewportSize.Y * this.OutlinesRenderScale)
-			);
-
-			// Adjust the size so that it's divisible by 8 (in order to work properly with compute shaders)
-			this._CaptureViewport.Size = new(
-				scaledSize.X % 8 == 0 ? scaledSize.X : scaledSize.X + (8 - scaledSize.X % 8),
-				scaledSize.Y % 8 == 0 ? scaledSize.Y : scaledSize.Y + (8 - scaledSize.Y % 8)
 			);
 		}
 
