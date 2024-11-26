@@ -147,7 +147,7 @@ speed_scale = 0.1
 script = ExtResource("3_weiuc")
 _Camera = NodePath("../Camera1")
 _OutlinesSize = 8
-_GlowRadius = 8
+_GlowRadius = 0
 
 [node name="OutlinesDisplayDemoComponent" type="Node" parent="Pivot/OutlinesDisplayComponent" node_paths=PackedStringArray("_OutlinesDisplayComponent", "_Camera1", "_Camera2")]
 script = ExtResource("4_1mtw3")

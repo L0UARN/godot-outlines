@@ -118,6 +118,9 @@ namespace Outlines
 				this._DisplayRect.Texture = this._CaptureViewport.GetTexture();
 				this._DisplayRect.StretchMode = TextureRect.StretchModeEnum.Scale;
 				this._DisplayRect.TextureFilter = CanvasItem.TextureFilterEnum.Linear;
+
+				// Make it so the user can click through the react, so it doesn't block the UI
+				this._DisplayRect.MouseFilter = Control.MouseFilterEnum.Ignore;
 			}
 
 			Vector2I mainViewportSize = Vector2I.Zero;
