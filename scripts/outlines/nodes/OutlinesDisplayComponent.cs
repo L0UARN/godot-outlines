@@ -155,12 +155,14 @@ namespace Outlines
 				this._SizeChangeHandlerSetup = false;
 			}
 
-			if (camera != null)
+			if (camera == null)
 			{
-				Viewport mainViewport = camera.GetViewport();
-				mainViewport.SizeChanged += HandleSizeChanged;
-				this._SizeChangeHandlerSetup = true;
+				return;
 			}
+
+			Viewport mainViewport = camera.GetViewport();
+			mainViewport.SizeChanged += HandleSizeChanged;
+			this._SizeChangeHandlerSetup = true;
 		}
 
 		[Export]

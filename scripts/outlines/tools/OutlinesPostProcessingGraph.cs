@@ -114,9 +114,8 @@ namespace Outlines.Tools
 				this._Image = new(this._Rd, image);
 				this._Graph.BindInput(0, this._Image);
 				this._Graph.BindOutput(0, this._Image);
-				this._Graph.ProcessingSize = this._Image.Size;
 
-				if (!this._Graph.IsBuilt())
+				if (!this._Graph.IsBuilt)
 				{
 					this._Graph.Build();
 				}

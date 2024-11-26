@@ -18,42 +18,41 @@ namespace PostProcessing.Structures.Graph
 		private readonly Dictionary<ComputeShader, HashSet<GraphArcFromShaderToShader>> _ShaderGraph = [];
 		private readonly Dictionary<GraphBufferBinding, ImageBuffer> _ImageBufferBindings = [];
 		private readonly List<ComputeShader> _Pipeline = [];
+		public bool IsBuilt { get; private set; } = false;
 
 		private Vector2I _ProcessingSize = Vector2I.MinValue;
-		public Vector2I ProcessingSize
+		private Vector2I ProcessingSize
 		{
 			get => this._ProcessingSize;
 			set
 			{
-				if (this._ProcessingSize.Equals(value))
-				{
-					return;
-				}
-
 				if (value.X <= 0 || value.Y <= 0)
 				{
 					throw new Exception("A graph's processing size can't be less than zero.");
 				}
 
-				if (!this.IsBuilt())
+				if (this._ProcessingSize.Equals(value))
 				{
-					this._ProcessingSize = value;
 					return;
 				}
 
-				// Unbind all the shaders
-				foreach (GraphBufferBinding binding in this._ImageBufferBindings.Keys)
+				// If the graph has already been built, the buffers need to be resized
+				if (this.IsBuilt)
 				{
-					binding.Shader.UnbindUniform(binding.Slot);
-				}
+					// Unbind all the buffer
+					foreach (GraphBufferBinding binding in this._ImageBufferBindings.Keys)
+					{
+						binding.Shader.UnbindUniform(binding.Slot);
+					}
 
-				// Resize each buffer and rebind them
-				foreach (KeyValuePair<GraphBufferBinding, ImageBuffer> binding in this._ImageBufferBindings)
-				{
-					// If multiple shaders are bound to this buffer, the size will be set multiple times
-					// But since there's a check that prevents from resizing to the same size, it's fine
-					binding.Value.Size = value;
-					binding.Key.Shader.BindUniform(binding.Value, binding.Key.Slot);
+					// Resize each buffer and rebind them
+					foreach (KeyValuePair<GraphBufferBinding, ImageBuffer> binding in this._ImageBufferBindings)
+					{
+						// If multiple shaders are bound to this buffer, the size will be set multiple times
+						// But since there's a check that prevents from resizing to the same size, it's fine
+						binding.Value.Size = value;
+						binding.Key.Shader.BindUniform(binding.Value, binding.Key.Slot);
+					}
 				}
 
 				this._ProcessingSize = value;
@@ -62,11 +61,26 @@ namespace PostProcessing.Structures.Graph
 
 		public Graph(RenderingDevice renderingDevice)
 		{
+			if (renderingDevice == null)
+			{
+				throw new Exception("The graph needs a non-null rendering device in order to work.");
+			}
+
 			this._Rd = renderingDevice;
 		}
 
 		public void CreateArcFromInputToShader(int fromInput, ComputeShader toShader, int toShaderSlot)
 		{
+			if (this.IsBuilt)
+			{
+				throw new Exception("Can't edit the graph once it has been built.");
+			}
+
+			if (toShader == null)
+			{
+				throw new Exception("Can't create an arc to a null shader.");
+			}
+
 			if (!this._InputGraph.ContainsKey(fromInput))
 			{
 				this._InputGraph[fromInput] = new(1);
@@ -81,6 +95,25 @@ namespace PostProcessing.Structures.Graph
 			}
 		}
 
+		private void UpdateProcessingSize()
+		{
+			Vector2I idealSize = Vector2I.MinValue;
+
+			foreach (ImageBuffer buffer in this._Inputs.Values)
+			{
+				idealSize.X = Math.Max(idealSize.X, buffer.Size.X);
+				idealSize.Y = Math.Max(idealSize.Y, buffer.Size.Y);
+			}
+
+			foreach (ImageBuffer buffer in this._Outputs.Values)
+			{
+				idealSize.X = Math.Max(idealSize.X, buffer.Size.X);
+				idealSize.Y = Math.Max(idealSize.Y, buffer.Size.Y);
+			}
+
+			this.ProcessingSize = idealSize;
+		}
+
 		public void BindInput(int input, ImageBuffer inputImage)
 		{
 			if (this._Inputs.TryGetValue(input, out ImageBuffer previous))
@@ -92,6 +125,7 @@ namespace PostProcessing.Structures.Graph
 			}
 
 			this._Inputs[input] = inputImage;
+			this.UpdateProcessingSize();
 
 			// Bind the new input image to all the shaders that require it
 			if (this._InputGraph.TryGetValue(input, out HashSet<GraphArcFromInputToShader> arcs))
@@ -103,27 +137,8 @@ namespace PostProcessing.Structures.Graph
 			}
 		}
 
-		public void CreateArcFromShaderToShader(ComputeShader fromShader, int fromShaderSlot, ComputeShader toShader, int toShaderSlot)
+		private bool CheckForCycle(ComputeShader fromShader)
 		{
-			if (fromShader == null)
-			{
-				throw new Exception("Can't create an arc from null to a shader.");
-			}
-
-			if (toShader == null)
-			{
-				throw new Exception("Can't create an arc from a shader to null.");
-			}
-
-			if (!this._ShaderGraph.ContainsKey(fromShader))
-			{
-				this._ShaderGraph[fromShader] = new(1);
-			}
-
-			GraphArcFromShaderToShader newArc = new(fromShaderSlot, toShader, toShaderSlot);
-			this._ShaderGraph[fromShader].Add(newArc);
-
-			// Check if creating the arc has created a cycle in the graph
 			Stack<ComputeShader> toVisit = new();
 			toVisit.Push(fromShader);
 
@@ -140,17 +155,61 @@ namespace PostProcessing.Structures.Graph
 				{
 					if (arc.ToShader.Equals(fromShader))
 					{
-						this._ShaderGraph[fromShader].Remove(newArc);
-						throw new Exception("Creating this arc would create a cycle in the graph.");
+						return true;
 					}
 
 					toVisit.Push(arc.ToShader);
 				}
 			}
+
+			return false;
+		}
+
+		public void CreateArcFromShaderToShader(ComputeShader fromShader, int fromShaderSlot, ComputeShader toShader, int toShaderSlot)
+		{
+			if (this.IsBuilt)
+			{
+				throw new Exception("Can't edit the graph once it has been built.");
+			}
+
+			if (fromShader == null)
+			{
+				throw new Exception("Can't create an arc from null shader.");
+			}
+
+			if (toShader == null)
+			{
+				throw new Exception("Can't create an arc to a null shader.");
+			}
+
+			if (!this._ShaderGraph.ContainsKey(fromShader))
+			{
+				this._ShaderGraph[fromShader] = new(1);
+			}
+
+			GraphArcFromShaderToShader newArc = new(fromShaderSlot, toShader, toShaderSlot);
+			this._ShaderGraph[fromShader].Add(newArc);
+
+			// Check if creating this new arc would cause the graph to become cyclic
+			if (this.CheckForCycle(fromShader))
+			{
+				this._ShaderGraph[fromShader].Remove(newArc);
+				throw new Exception("Creating this arc would create a cycle in the graph.");
+			}
 		}
 
 		public void CreateArcFromShaderToOutput(ComputeShader fromShader, int fromShaderSlot, int toOutput)
 		{
+			if (this.IsBuilt)
+			{
+				throw new Exception("Can't edit the graph once it has been built.");
+			}
+
+			if (fromShader == null)
+			{
+				throw new Exception("Can't create an arc from a null shader.");
+			}
+
 			if (!this._OutputGraph.ContainsKey(toOutput))
 			{
 				this._OutputGraph[toOutput] = new(1);
@@ -176,6 +235,7 @@ namespace PostProcessing.Structures.Graph
 			}
 
 			this._Outputs[output] = outputImage;
+			this.UpdateProcessingSize();
 
 			// Bind the new output image to all the shaders that require it
 			if (this._OutputGraph.TryGetValue(output, out HashSet<GraphArcFromShaderToOutput> arcs))
@@ -237,7 +297,7 @@ namespace PostProcessing.Structures.Graph
 			}
 			else
 			{
-				buffer = new(this._Rd, this._ProcessingSize);
+				buffer = new(this._Rd, this.ProcessingSize);
 				this._ImageBufferBindings[fromBinding] = buffer;
 			}
 
@@ -250,9 +310,19 @@ namespace PostProcessing.Structures.Graph
 
 		public void Build()
 		{
-			if (this._ProcessingSize.Equals(Vector2I.MinValue))
+			if (this.IsBuilt)
 			{
-				throw new Exception("Can't build the graph before having set the processing size.");
+				throw new Exception("The graph has already been built.");
+			}
+
+			if (this._Inputs.Count == 0 || this._Outputs.Count == 0 || this.ProcessingSize.Equals(Vector2I.MinValue))
+			{
+				throw new Exception("At least one input image and one output image must be bound before building the graph.");
+			}
+
+			if (this._InputGraph.Count == 0 || this._ShaderGraph.Count == 0 || this._OutputGraph.Count == 0)
+			{
+				throw new Exception("The graph requires at least one input to shader arc, one shader to shader arc, and one shader to output arc in order to be built.");
 			}
 
 			// this._ShaderGraph contains all the shaders that are dependent on one shader
@@ -321,23 +391,27 @@ namespace PostProcessing.Structures.Graph
 					this._Pipeline.Insert(lastDependencyIndex + 1, justVisited);
 				}
 			}
-		}
 
-		public bool IsBuilt()
-		{
-			return this._Pipeline.Count > 0;
+			this.IsBuilt = true;
 		}
 
 		public void Run()
 		{
+			if (!this.IsBuilt)
+			{
+				throw new Exception("Can't run the graph before it has been built.");
+			}
+
 			foreach (ComputeShader step in this._Pipeline)
 			{
-				step.Run(this._ProcessingSize);
+				step.Run(this.ProcessingSize);
 			}
 		}
 
 		public void Cleanup()
 		{
+			this.IsBuilt = false;
+
 			foreach (KeyValuePair<int, HashSet<GraphArcFromInputToShader>> inputArc in this._InputGraph)
 			{
 				foreach (GraphArcFromInputToShader arcData in inputArc.Value)

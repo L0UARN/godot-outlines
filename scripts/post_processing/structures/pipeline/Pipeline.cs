@@ -9,9 +9,10 @@ namespace PostProcessing.Structures.Pipeline
 {
 	public class Pipeline : ICleanupable
 	{
-		private RenderingDevice _Rd = null;
-		private readonly List<ComputeShader> _Pipeline = new();
-		private readonly Dictionary<ComputeShader, PipelineShaderInputOutput> _ShaderInputOutputs = new();
+		private readonly RenderingDevice _Rd = null;
+
+		private readonly List<ComputeShader> _Pipeline = [];
+		private readonly Dictionary<ComputeShader, PipelineShaderInputOutput> _ShaderInputOutputs = [];
 		public bool IsBuilt { get; private set; } = false;
 
 		private ImageBuffer _Buffer1 = null;
@@ -37,8 +38,8 @@ namespace PostProcessing.Structures.Pipeline
 				ImageBuffer newBuffer1 = new(this._Rd, value);
 				ImageBuffer newBuffer2 = new(this._Rd, value);
 
-				// If the pipeline has already been built (and needs buffers)
-				if (this.IsBuilt && this._Pipeline.Count > 1)
+				// If the pipeline has already been built, the buffers need to be resized
+				if (this.IsBuilt)
 				{
 					// For each shader in the pipeline, re-bind its input and outputs to the new buffers
 					for (int i = 0; i < this._Pipeline.Count; i++)
@@ -167,6 +168,11 @@ namespace PostProcessing.Structures.Pipeline
 
 		public Pipeline(RenderingDevice renderingDevice)
 		{
+			if (renderingDevice == null)
+			{
+				throw new Exception("The pipeline needs a non-null rendering device in order to work.");
+			}
+
 			this._Rd = renderingDevice;
 		}
 
@@ -210,6 +216,11 @@ namespace PostProcessing.Structures.Pipeline
 
 		public void Build()
 		{
+			if (this.IsBuilt)
+			{
+				throw new Exception("The pipeline has already been built.");
+			}
+
 			if (this._InputImage == null || this._OutputImage == null || this.ProcessingSize.Equals(Vector2I.MinValue))
 			{
 				throw new Exception("The input and output images must be set before building the pipeline.");
