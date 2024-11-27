@@ -1,33 +1,10 @@
-[gd_scene load_steps=16 format=3 uid="uid://b2bgu3j7lj8xq"]
+[gd_scene load_steps=10 format=3 uid="uid://b2bgu3j7lj8xq"]
 
-[ext_resource type="Script" path="res://scripts/outlines/nodes/OutlinerComponent.cs" id="1_uyspn"]
-[ext_resource type="Script" path="res://scripts/outlines/nodes/OutlinerComponentDemo.cs" id="3_c247d"]
-[ext_resource type="Script" path="res://scripts/outlines/nodes/OutlinesDisplayComponent.cs" id="3_weiuc"]
-[ext_resource type="Script" path="res://scripts/outlines/nodes/OutlinesDisplayDemoComponent.cs" id="4_1mtw3"]
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7d8ek"]
-albedo_color = Color(1, 0, 0, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_03cqh"]
-material = SubResource("StandardMaterial3D_7d8ek")
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lmb1s"]
-albedo_color = Color(0, 0.352941, 1, 1)
-
-[sub_resource type="SphereMesh" id="SphereMesh_k34qs"]
-material = SubResource("StandardMaterial3D_lmb1s")
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pdmsy"]
-albedo_color = Color(0.415686, 1, 0, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_ktjv2"]
-material = SubResource("StandardMaterial3D_pdmsy")
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8173c"]
-albedo_color = Color(1, 0.878431, 0, 1)
-
-[sub_resource type="PrismMesh" id="PrismMesh_xo604"]
-material = SubResource("StandardMaterial3D_8173c")
+[ext_resource type="Script" path="res://scripts/outlines/OutlinesDisplayComponent.cs" id="1_jbtho"]
+[ext_resource type="Script" path="res://scripts/outlines_demo/OutlinesDisplayDemoComponent.cs" id="2_uakm6"]
+[ext_resource type="Script" path="res://scripts/outlines/NewOutlinerComponent.cs" id="4_oodqg"]
+[ext_resource type="Script" path="res://scripts/outlines_demo/SpawnerComponent.cs" id="5_oawq2"]
+[ext_resource type="Script" path="res://scripts/outlines_demo/OutlinerDemoComponent.cs" id="5_prat3"]
 
 [sub_resource type="Animation" id="Animation_y6ghe"]
 length = 0.001
@@ -90,43 +67,14 @@ _data = {
 "rotating_camera": SubResource("Animation_irl3e")
 }
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_8boqj"]
+size = Vector3(20, 20, 20)
+
 [node name="Testing" type="Node3D"]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 0, 0)
 shadow_enabled = true
-
-[node name="Node3D2" type="Node3D" parent="."]
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Node3D2"]
-mesh = SubResource("BoxMesh_03cqh")
-skeleton = NodePath("../..")
-
-[node name="MeshInstance3D3" type="MeshInstance3D" parent="Node3D2"]
-transform = Transform3D(0.749776, 0, 0.661691, 0, 1, 0, -0.661691, 0, 0.749776, -0.379181, 0.972552, 0.965422)
-mesh = SubResource("SphereMesh_k34qs")
-skeleton = NodePath("../..")
-
-[node name="Node3D" type="Node3D" parent="."]
-
-[node name="MeshInstance3D2" type="MeshInstance3D" parent="Node3D"]
-transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, 1, 0.5, 0)
-mesh = SubResource("BoxMesh_ktjv2")
-skeleton = NodePath("../..")
-
-[node name="MeshInstance3D4" type="MeshInstance3D" parent="Node3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.39213, 0, 0)
-mesh = SubResource("PrismMesh_xo604")
-skeleton = NodePath("../..")
-
-[node name="OutlinerComponent" type="Node" parent="Node3D" node_paths=PackedStringArray("_Target")]
-script = ExtResource("1_uyspn")
-_Target = NodePath("..")
-_Enabled = true
-
-[node name="OutlinerComponentDemo" type="Node" parent="Node3D/OutlinerComponent" node_paths=PackedStringArray("OutlinerComponent")]
-script = ExtResource("3_c247d")
-OutlinerComponent = NodePath("..")
 
 [node name="Pivot" type="Node3D" parent="."]
 
@@ -144,13 +92,39 @@ autoplay = "rotating_camera"
 speed_scale = 0.1
 
 [node name="OutlinesDisplayComponent" type="Node" parent="Pivot" node_paths=PackedStringArray("_Camera")]
-script = ExtResource("3_weiuc")
+script = ExtResource("1_jbtho")
 _Camera = NodePath("../Camera1")
-_OutlinesSize = 8
 _GlowRadius = 0
 
 [node name="OutlinesDisplayDemoComponent" type="Node" parent="Pivot/OutlinesDisplayComponent" node_paths=PackedStringArray("_OutlinesDisplayComponent", "_Camera1", "_Camera2")]
-script = ExtResource("4_1mtw3")
+script = ExtResource("2_uakm6")
 _OutlinesDisplayComponent = NodePath("..")
 _Camera1 = NodePath("../../Camera1")
 _Camera2 = NodePath("../../Camera2")
+
+[node name="SpawnerComponent" type="Node" parent="." node_paths=PackedStringArray("SpawnPoint", "SpawnTimer", "BoundingBox")]
+script = ExtResource("5_oawq2")
+SpawnPoint = NodePath("BoundingBox/SpawnPoint")
+SpawnTimer = NodePath("SpawnTimer")
+BoundingBox = NodePath("BoundingBox")
+
+[node name="BoundingBox" type="Area3D" parent="SpawnerComponent"]
+
+[node name="BoundingBoxShape" type="CollisionShape3D" parent="SpawnerComponent/BoundingBox"]
+shape = SubResource("BoxShape3D_8boqj")
+
+[node name="SpawnPoint" type="Node3D" parent="SpawnerComponent/BoundingBox"]
+
+[node name="SpawnTimer" type="Timer" parent="SpawnerComponent"]
+wait_time = 0.1
+autostart = true
+
+[node name="NewOutlinerComponent" type="Node" parent="SpawnerComponent" node_paths=PackedStringArray("_Target")]
+script = ExtResource("4_oodqg")
+_Target = NodePath("../BoundingBox/SpawnPoint")
+_OutlinesColor = Color(0.329412, 1, 1, 1)
+_Enabled = true
+
+[node name="OutlinerDemoComponent" type="Node" parent="SpawnerComponent/NewOutlinerComponent" node_paths=PackedStringArray("OutlinerComponent")]
+script = ExtResource("5_prat3")
+OutlinerComponent = NodePath("..")

@@ -1,6 +1,7 @@
 using Godot;
+using Outlines;
 
-namespace Outlines
+namespace OutlinesDemo
 {
 	[GlobalClass]
 	public partial class OutlinesDisplayDemoComponent : Node

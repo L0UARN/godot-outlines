@@ -1,16 +1,17 @@
 using System;
 using Godot;
 using Godot.Collections;
+using Outlines;
 
-namespace Outlines
+namespace OutlinesDemo
 {
 	[GlobalClass]
-	public partial class OutlinerComponentDemo : Node
+	public partial class OutlinerDemoComponent : Node
 	{
 		[Export]
 		private OutlinerComponent OutlinerComponent = null;
 
-		private Array<MeshInstance3D> AddedOutlineables = new();
+		private Array<MeshInstance3D> AddedOutlineables = [];
 
 		private void AddOutlineable()
 		{
