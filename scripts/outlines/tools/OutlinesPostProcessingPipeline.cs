@@ -95,6 +95,7 @@ namespace Outlines.Tools
 			}
 
 			this._Resources.Clear();
+			this._Pipeline.Cleanup();
 		}
 	}
 }

@@ -93,8 +93,8 @@ speed_scale = 0.1
 
 [node name="OutlinesDisplayComponent" type="Node" parent="Pivot" node_paths=PackedStringArray("_Camera")]
 script = ExtResource("1_jbtho")
-_Camera = NodePath("../Camera1")
 _GlowRadius = 0
+_Camera = NodePath("../Camera1")
 
 [node name="OutlinesDisplayDemoComponent" type="Node" parent="Pivot/OutlinesDisplayComponent" node_paths=PackedStringArray("_OutlinesDisplayComponent", "_Camera1", "_Camera2")]
 script = ExtResource("2_uakm6")
@@ -121,9 +121,9 @@ autostart = true
 
 [node name="OutlinerComponent" type="Node" parent="SpawnerComponent" node_paths=PackedStringArray("_Target")]
 script = ExtResource("4_g4fbv")
-_Target = NodePath("../BoundingBox/SpawnPoint")
 _OutlinesColor = Color(0.768627, 1, 1, 1)
 _Enabled = true
+_Target = NodePath("../BoundingBox/SpawnPoint")
 
 [node name="OutlinerDemoComponent" type="Node" parent="SpawnerComponent/OutlinerComponent" node_paths=PackedStringArray("OutlinerComponent")]
 script = ExtResource("5_prat3")

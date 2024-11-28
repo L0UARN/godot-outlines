@@ -132,6 +132,7 @@ namespace Outlines.Tools
 			}
 
 			this._Resources.Clear();
+			this._Graph.Cleanup();
 		}
 	}
 }
