@@ -69,19 +69,16 @@ namespace Outlines
 			RenderSceneBuffersRD renderSceneBuffers = (RenderSceneBuffersRD)renderData.GetRenderSceneBuffers();
 			uint viewCount = renderSceneBuffers.GetViewCount();
 
-			if (this._Effects.Count < viewCount)
+			// An effect is needed for each view
+			while (this._Effects.Count != viewCount)
 			{
-				for (int i = 0; i < viewCount - this._Effects.Count; i++)
+				if (this._Effects.Count < viewCount)
 				{
 					this._Effects.Add(this._EffectBuilder.Build());
 				}
-			}
-			else if (this._Effects.Count > viewCount)
-			{
-				while (this._Effects.Count > viewCount)
+				else
 				{
-					this._Effects[(int)viewCount].Cleanup();
-					this._Effects.RemoveAt((int)viewCount);
+					this._Effects.RemoveAt(this._Effects.Count - 1);
 				}
 			}
 

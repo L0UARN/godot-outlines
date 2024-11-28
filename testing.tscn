@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/outlines/OutlinesDisplayComponent.cs" id="1_jbtho"]
 [ext_resource type="Script" path="res://scripts/outlines_demo/OutlinesDisplayDemoComponent.cs" id="2_uakm6"]
-[ext_resource type="Script" path="res://scripts/outlines/NewOutlinerComponent.cs" id="4_oodqg"]
+[ext_resource type="Script" path="res://scripts/outlines/OutlinerComponent.cs" id="4_g4fbv"]
 [ext_resource type="Script" path="res://scripts/outlines_demo/SpawnerComponent.cs" id="5_oawq2"]
 [ext_resource type="Script" path="res://scripts/outlines_demo/OutlinerDemoComponent.cs" id="5_prat3"]
 
@@ -119,12 +119,12 @@ shape = SubResource("BoxShape3D_8boqj")
 wait_time = 0.1
 autostart = true
 
-[node name="NewOutlinerComponent" type="Node" parent="SpawnerComponent" node_paths=PackedStringArray("_Target")]
-script = ExtResource("4_oodqg")
+[node name="OutlinerComponent" type="Node" parent="SpawnerComponent" node_paths=PackedStringArray("_Target")]
+script = ExtResource("4_g4fbv")
 _Target = NodePath("../BoundingBox/SpawnPoint")
-_OutlinesColor = Color(0.329412, 1, 1, 1)
+_OutlinesColor = Color(0.768627, 1, 1, 1)
 _Enabled = true
 
-[node name="OutlinerDemoComponent" type="Node" parent="SpawnerComponent/NewOutlinerComponent" node_paths=PackedStringArray("OutlinerComponent")]
+[node name="OutlinerDemoComponent" type="Node" parent="SpawnerComponent/OutlinerComponent" node_paths=PackedStringArray("OutlinerComponent")]
 script = ExtResource("5_prat3")
 OutlinerComponent = NodePath("..")
