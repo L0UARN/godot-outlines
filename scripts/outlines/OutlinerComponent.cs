@@ -183,7 +183,8 @@ namespace Outlines
 		{
 			base._Ready();
 
-			this._OutlineableMaterial = ResourceLoader.Load<ShaderMaterial>(OUTLINEABLE_MATERIAL_PATH);
+			ShaderMaterial originalOutlineableMaterial = ResourceLoader.Load<ShaderMaterial>(OUTLINEABLE_MATERIAL_PATH);
+			this._OutlineableMaterial = (ShaderMaterial)originalOutlineableMaterial.Duplicate();
 
 			this.UpdateOutlinesLayer(this._OutlinesLayer);
 			this.UpdateEnabled(this._Enabled);

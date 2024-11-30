@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://b2bgu3j7lj8xq"]
+[gd_scene load_steps=12 format=3 uid="uid://b2bgu3j7lj8xq"]
 
 [ext_resource type="Script" path="res://scripts/outlines/OutlinesDisplayComponent.cs" id="1_jbtho"]
 [ext_resource type="Script" path="res://scripts/outlines_demo/OutlinesDisplayDemoComponent.cs" id="2_uakm6"]
@@ -70,6 +70,10 @@ _data = {
 [sub_resource type="BoxShape3D" id="BoxShape3D_8boqj"]
 size = Vector3(20, 20, 20)
 
+[sub_resource type="CylinderMesh" id="CylinderMesh_ffmma"]
+
+[sub_resource type="PrismMesh" id="PrismMesh_jbrws"]
+
 [node name="Testing" type="Node3D"]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
@@ -93,8 +97,8 @@ speed_scale = 0.1
 
 [node name="OutlinesDisplayComponent" type="Node" parent="Pivot" node_paths=PackedStringArray("_Camera")]
 script = ExtResource("1_jbtho")
-_GlowRadius = 0
 _Camera = NodePath("../Camera1")
+_GlowRadius = 0
 
 [node name="OutlinesDisplayDemoComponent" type="Node" parent="Pivot/OutlinesDisplayComponent" node_paths=PackedStringArray("_OutlinesDisplayComponent", "_Camera1", "_Camera2")]
 script = ExtResource("2_uakm6")
@@ -121,10 +125,30 @@ autostart = true
 
 [node name="OutlinerComponent" type="Node" parent="SpawnerComponent" node_paths=PackedStringArray("_Target")]
 script = ExtResource("4_g4fbv")
+_Target = NodePath("../BoundingBox/SpawnPoint")
 _OutlinesColor = Color(0.768627, 1, 1, 1)
 _Enabled = true
-_Target = NodePath("../BoundingBox/SpawnPoint")
 
 [node name="OutlinerDemoComponent" type="Node" parent="SpawnerComponent/OutlinerComponent" node_paths=PackedStringArray("OutlinerComponent")]
 script = ExtResource("5_prat3")
 OutlinerComponent = NodePath("..")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, -1, 3)
+mesh = SubResource("CylinderMesh_ffmma")
+
+[node name="OutlinerComponent" type="Node" parent="MeshInstance3D" node_paths=PackedStringArray("_Target")]
+script = ExtResource("4_g4fbv")
+_Target = NodePath("..")
+_OutlinesColor = Color(1, 0.768627, 0.768627, 1)
+_Enabled = true
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, 0.707107, -1, 1, -1)
+mesh = SubResource("PrismMesh_jbrws")
+
+[node name="OutlinerComponent" type="Node" parent="MeshInstance3D2" node_paths=PackedStringArray("_Target")]
+script = ExtResource("4_g4fbv")
+_Target = NodePath("..")
+_OutlinesColor = Color(0.768627, 0.768627, 1, 1)
+_Enabled = true

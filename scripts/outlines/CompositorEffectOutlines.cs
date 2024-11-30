@@ -91,9 +91,9 @@ namespace Outlines
 
 		public void Cleanup()
 		{
-			foreach (IOutlinesPostProcessing graph in this._Effects)
+			foreach (IOutlinesPostProcessing effect in this._Effects)
 			{
-				graph.Cleanup();
+				effect.Cleanup();
 			}
 
 			this._Effects.Clear();
