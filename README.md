@@ -26,9 +26,16 @@ A way to draw the outlines of 3D objects.
 
 ### Copy the files
 
-Download and copy the `script` and `assets` folders to your project. If you ever want to change the location of the assets in your project, you will need to update their location in the scripts.
+Download and copy the `scripts` and `assets` folders to your project. If you ever want to change the location of the assets in your project, you will need to update their location in the scripts. The paths are stored as constants in the files that use them, so they should be easy to find.
 
-> The `OutlinerComponentDemo.cs` and `OutlinesDisplayDemoComponent.cs` scripts, both located in `scripts/outlines/nodes` were created for the purpose of testing and showcasing the system. Feel free to remove them from your projet, because your probably won't need them. If however you decide to use them, note that they will require configuring "ToggleOutlines", "AddOutlineable", "RemoveOutlineable", "SwitchCamera" and "SwitchEffect" in the input map.
+> The scripts located in `scripts/outlines_demo` were created for the purpose of testing and showcasing the system. Feel free to remove them from your projet, because your probably won't need them. If however you decide to use them, note that they will require configuring the following inputs in the input map:
+> - ToggleOutlines
+> - AddOutlineable
+> - RemoveOutlineable
+> - SwitchCamera
+> - SwitchEffect
+
+Don't forget to **build the projet** before moving on to the next steps, otherwise the nodes won't show up in the "Create new node" menu.
 
 ### Select the nodes to outline
 
