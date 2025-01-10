@@ -85,7 +85,7 @@ namespace Outlines
 			for (uint i = 0; i < viewCount; i++)
 			{
 				Rid rawImage = renderSceneBuffers.GetColorLayer(i);
-				this._Effects[(int)i].Run(rawImage);
+				this._Effects[(int)i].Run(rawImage, new(), new());
 			}
 		}
 

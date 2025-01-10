@@ -5,6 +5,6 @@ namespace Outlines.Tools
 {
 	public interface IOutlinesPostProcessing : ICleanupable
 	{
-		public void Run(Rid image);
+		public void Run(Rid outlinesColor, Rid outlinesDepth, Rid mainDepth);
 	}
 }

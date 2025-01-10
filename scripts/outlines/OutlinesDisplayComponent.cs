@@ -6,36 +6,36 @@ namespace Outlines
 	public partial class OutlinesDisplayComponent : Node
 	{
 		private CompositorEffectOutlines _OutlinesEffect = null;
-		private SubViewport _CaptureViewport = null;
-		private Camera3D _CaptureCamera = null;
+		private SubViewport _OutlinesCaptureViewport = null;
+		private Camera3D _OutlinesCaptureCamera = null;
 		private TextureRect _DisplayRect = null;
 		private bool _SizeChangeHandlerSetup = false;
 
-		private void SetupCaptureViewport(Camera3D camera)
+		private void SetupOutlinesCaptureViewport(Camera3D camera)
 		{
 			if (camera == null)
 			{
 				// Cleanup the capture viewport
-				this._CaptureViewport?.QueueFree();
-				this._CaptureViewport = null;
+				this._OutlinesCaptureViewport?.QueueFree();
+				this._OutlinesCaptureViewport = null;
 				return;
 			}
 
-			if (this._CaptureViewport == null)
+			if (this._OutlinesCaptureViewport == null)
 			{
 				// Initial setup that should only be done once
-				this._CaptureViewport = new();
-				this.AddChild(this._CaptureViewport);
+				this._OutlinesCaptureViewport = new();
+				this.AddChild(this._OutlinesCaptureViewport);
 
 				// Disable any performance-impacting feature that would be useless anyway
-				this._CaptureViewport.Msaa2D = Viewport.Msaa.Disabled;
-				this._CaptureViewport.Msaa3D = Viewport.Msaa.Disabled;
-				this._CaptureViewport.ScreenSpaceAA = Viewport.ScreenSpaceAAEnum.Disabled;
-				this._CaptureViewport.PositionalShadowAtlasSize = 0;
-				this._CaptureViewport.FsrSharpness = 0.0f;
+				this._OutlinesCaptureViewport.Msaa2D = Viewport.Msaa.Disabled;
+				this._OutlinesCaptureViewport.Msaa3D = Viewport.Msaa.Disabled;
+				this._OutlinesCaptureViewport.ScreenSpaceAA = Viewport.ScreenSpaceAAEnum.Disabled;
+				this._OutlinesCaptureViewport.PositionalShadowAtlasSize = 0;
+				this._OutlinesCaptureViewport.FsrSharpness = 0.0f;
 
 				// We rely on the alpha channel in order to know if a pixel is part of an object to outline
-				this._CaptureViewport.TransparentBg = true;
+				this._OutlinesCaptureViewport.TransparentBg = true;
 			}
 
 			Vector2I mainViewportSize = Vector2I.Zero;
@@ -51,41 +51,41 @@ namespace Outlines
 			}
 
 			// Scale the viewport's size according to the render scale
-			this._CaptureViewport.Size = new(
+			this._OutlinesCaptureViewport.Size = new(
 				Mathf.FloorToInt(mainViewportSize.X * this.OutlinesRenderScale),
 				Mathf.FloorToInt(mainViewportSize.Y * this.OutlinesRenderScale)
 			);
 		}
 
-		private void SetupCaptureCamera(Camera3D camera)
+		private void SetupOutlinesCaptureCamera(Camera3D camera)
 		{
 			if (camera == null)
 			{
 				// Cleanup the capture camera
-				this._CaptureCamera?.QueueFree();
-				this._CaptureCamera = null;
+				this._OutlinesCaptureCamera?.QueueFree();
+				this._OutlinesCaptureCamera = null;
 				return;
 			}
 
-			if (this._CaptureCamera == null)
+			if (this._OutlinesCaptureCamera == null)
 			{
 				// Initial setup that should only be done once
-				this._CaptureCamera = new();
-				this._CaptureViewport.AddChild(this._CaptureCamera);
+				this._OutlinesCaptureCamera = new();
+				this._OutlinesCaptureViewport.AddChild(this._OutlinesCaptureCamera);
 
 				// Make the capture camera only see the outline layer
-				this._CaptureCamera.CullMask = this.OutlineLayer;
+				this._OutlinesCaptureCamera.CullMask = this.OutlineLayer;
 
 				// Add the outlines compositor effect to the capture camera
-				this._CaptureCamera.Compositor = new()
+				this._OutlinesCaptureCamera.Compositor = new()
 				{
 					CompositorEffects = [this._OutlinesEffect]
 				};
 
 				// Make the capture camera top level so it can freely follow the original camera
-				this._CaptureCamera.TopLevel = true;
+				this._OutlinesCaptureCamera.TopLevel = true;
 				// Make sure the capture camera is active
-				this._CaptureCamera.MakeCurrent();
+				this._OutlinesCaptureCamera.MakeCurrent();
 			}
 
 			// Make the main camera not see the outline layer
@@ -109,7 +109,7 @@ namespace Outlines
 				this.AddChild(this._DisplayRect);
 
 				// Bind the viewport's texture to the TextureRect's texture
-				this._DisplayRect.Texture = this._CaptureViewport.GetTexture();
+				this._DisplayRect.Texture = this._OutlinesCaptureViewport.GetTexture();
 				this._DisplayRect.StretchMode = TextureRect.StretchModeEnum.Scale;
 				this._DisplayRect.TextureFilter = CanvasItem.TextureFilterEnum.Linear;
 
@@ -135,8 +135,8 @@ namespace Outlines
 
 		private void HandleSizeChanged()
 		{
-			this.SetupCaptureViewport(this._Camera);
-			this.SetupCaptureCamera(this._Camera);
+			this.SetupOutlinesCaptureViewport(this._Camera);
+			this.SetupOutlinesCaptureCamera(this._Camera);
 			this.SetupDisplayRect(this.Camera);
 		}
 
@@ -177,8 +177,8 @@ namespace Outlines
 					return;
 				}
 
-				this.SetupCaptureViewport(value);
-				this.SetupCaptureCamera(value);
+				this.SetupOutlinesCaptureViewport(value);
+				this.SetupOutlinesCaptureCamera(value);
 				this.SetupDisplayRect(value);
 				this.SetupSizeChangeHandler(value);
 
@@ -286,7 +286,7 @@ namespace Outlines
 				}
 
 				this._Camera.CullMask &= ~value;
-				this._CaptureCamera.CullMask = value;
+				this._OutlinesCaptureCamera.CullMask = value;
 
 				this._OutlineLayer = value;
 			}
@@ -300,8 +300,8 @@ namespace Outlines
 			this.ApplyScaledOutlinesSize(this._OutlinesSize, this._OutlinesRenderScale);
 			this.ApplyScaledGlowRadius(this._GlowRadius, this._OutlinesRenderScale);
 
-			this.SetupCaptureViewport(this._Camera);
-			this.SetupCaptureCamera(this._Camera);
+			this.SetupOutlinesCaptureViewport(this._Camera);
+			this.SetupOutlinesCaptureCamera(this._Camera);
 			this.SetupDisplayRect(this._Camera);
 			this.SetupSizeChangeHandler(this._Camera);
 		}
@@ -314,16 +314,16 @@ namespace Outlines
 			}
 
 			// Mimic the main camera
-			this._CaptureCamera.GlobalTransform = this._Camera.GlobalTransform;
-			this._CaptureCamera.Projection = this._Camera.Projection;
-			this._CaptureCamera.Fov = this._Camera.Fov;
-			this._CaptureCamera.Size = this._Camera.Size;
-			this._CaptureCamera.Near = this._Camera.Near;
-			this._CaptureCamera.Far = this._Camera.Far;
-			this._CaptureCamera.FrustumOffset = this._Camera.FrustumOffset;
-			this._CaptureCamera.VOffset = this._Camera.VOffset;
-			this._CaptureCamera.HOffset = this._Camera.HOffset;
-			this._CaptureCamera.KeepAspect = this._Camera.KeepAspect;
+			this._OutlinesCaptureCamera.GlobalTransform = this._Camera.GlobalTransform;
+			this._OutlinesCaptureCamera.Projection = this._Camera.Projection;
+			this._OutlinesCaptureCamera.Fov = this._Camera.Fov;
+			this._OutlinesCaptureCamera.Size = this._Camera.Size;
+			this._OutlinesCaptureCamera.Near = this._Camera.Near;
+			this._OutlinesCaptureCamera.Far = this._Camera.Far;
+			this._OutlinesCaptureCamera.FrustumOffset = this._Camera.FrustumOffset;
+			this._OutlinesCaptureCamera.VOffset = this._Camera.VOffset;
+			this._OutlinesCaptureCamera.HOffset = this._Camera.HOffset;
+			this._OutlinesCaptureCamera.KeepAspect = this._Camera.KeepAspect;
 		}
 
 		public override void _Process(double delta)

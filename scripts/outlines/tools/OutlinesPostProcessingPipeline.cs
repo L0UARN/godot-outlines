@@ -70,11 +70,11 @@ namespace Outlines.Tools
 			this.SetupPipeline();
 		}
 
-		public void Run(Rid image)
+		public void Run(Rid outlinesColor, Rid outlinesDepth, Rid mainDepth)
 		{
-			if (!image.Equals(this._Image?.Rid))
+			if (!outlinesColor.Equals(this._Image?.Rid))
 			{
-				this._Image = new(this._Rd, image);
+				this._Image = new(this._Rd, outlinesColor);
 				this._Pipeline.InputImage = this._Image;
 				this._Pipeline.OutputImage = this._Image;
 
