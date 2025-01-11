@@ -9,6 +9,7 @@ namespace Outlines
 		private const string OUTLINEABLE_FOLDER = "res://assets/outlines/outlineable";
 		private const string OUTLINEABLE_MATERIAL_PATH = $"{OUTLINEABLE_FOLDER}/outlineable.tres";
 
+		private StringName _SetupNodesGroup = null;
 		private ShaderMaterial _OutlineableMaterial = null;
 		private Dictionary<Node, MeshInstance3D> _OutlinesMeshes = [];
 
@@ -17,6 +18,13 @@ namespace Outlines
 			if (target == null)
 			{
 				return;
+			}
+
+			// Disconnect the signals if they haven't already been disconnected and if they have been connected
+			if (target.IsInsideTree() && target.IsInGroup(this._SetupNodesGroup))
+			{
+				target.ChildEnteredTree -= this.PrepareTarget;
+				target.ChildExitingTree -= this.CleanupTarget;
 			}
 
 			// If the target has an outline mesh setup, delete it
@@ -66,6 +74,8 @@ namespace Outlines
 			target.ChildEnteredTree += this.PrepareTarget;
 			// Cleanup the children of the target when they exit the tree
 			target.ChildExitingTree += this.CleanupTarget;
+			// Mark the target to know that the signals have been connected
+			target.AddToGroup(this._SetupNodesGroup);
 		}
 
 		private void PrepareTarget(Node target)
@@ -183,6 +193,7 @@ namespace Outlines
 		{
 			base._Ready();
 
+			this._SetupNodesGroup = $"Outlineable_{this.GetInstanceId()}";
 			ShaderMaterial originalOutlineableMaterial = ResourceLoader.Load<ShaderMaterial>(OUTLINEABLE_MATERIAL_PATH);
 			this._OutlineableMaterial = (ShaderMaterial)originalOutlineableMaterial.Duplicate();
 
