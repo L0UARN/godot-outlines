@@ -8,6 +8,7 @@ namespace Outlines
 		private CompositorEffectOutlines _OutlinesEffect = null;
 		private SubViewport _CaptureViewport = null;
 		private Camera3D _CaptureCamera = null;
+		private CanvasLayer _CanvasLayer = null;
 		private TextureRect _DisplayRect = null;
 		private bool _SizeChangeHandlerSetup = false;
 
@@ -21,9 +22,9 @@ namespace Outlines
 				return;
 			}
 
+			// Initial setup that should only be done once
 			if (this._CaptureViewport == null)
 			{
-				// Initial setup that should only be done once
 				this._CaptureViewport = new();
 				this.AddChild(this._CaptureViewport);
 
@@ -67,9 +68,9 @@ namespace Outlines
 				return;
 			}
 
+			// Initial setup that should only be done once
 			if (this._CaptureCamera == null)
 			{
-				// Initial setup that should only be done once
 				this._CaptureCamera = new();
 				this._CaptureViewport.AddChild(this._CaptureCamera);
 
@@ -99,14 +100,21 @@ namespace Outlines
 				// Cleanup the display rect
 				this._DisplayRect?.QueueFree();
 				this._DisplayRect = null;
+
+				// Cleanup the canvas layer
+				this._CanvasLayer?.QueueFree();
+				this._CanvasLayer = null;
 				return;
 			}
 
-			if (this._DisplayRect == null)
+			// Initial setup that should only be done once
+			if (this._CanvasLayer == null || this._DisplayRect == null)
 			{
-				// Initial setup that should only be done once
+				this._CanvasLayer = new();
+				this.AddChild(this._CanvasLayer);
+
 				this._DisplayRect = new();
-				this.AddChild(this._DisplayRect);
+				this._CanvasLayer.AddChild(this._DisplayRect);
 
 				// Bind the viewport's texture to the TextureRect's texture
 				this._DisplayRect.Texture = this._CaptureViewport.GetTexture();
@@ -137,7 +145,7 @@ namespace Outlines
 		{
 			this.SetupCaptureViewport(this._Camera);
 			this.SetupCaptureCamera(this._Camera);
-			this.SetupDisplayRect(this.Camera);
+			this.SetupDisplayRect(this._Camera);
 		}
 
 		private void SetupSizeChangeHandler(Camera3D camera)
